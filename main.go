@@ -23,12 +23,12 @@ type Matrix struct {
 const (
 	cellWidth   = 150
 	cellHeight  = 50
-	cellPadding = 1
+	cellPadding = 4
 )
 
 func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
 	for i := 0; i < 10; i++ {
-		cell := image.Rect(cellWidth*i, 0, ((cellWidth * i) + cellWidth), cellHeight)
+		cell := image.Rect((cellWidth*i)+cellPadding, 0, ((cellWidth * i) + cellWidth), cellHeight)
 		fmt.Printf("CELL: %+v\n", cell)
 		d := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
 		paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
@@ -69,7 +69,7 @@ func main() {
 
 func run(w *app.Window) error {
 	m := Matrix{
-		Color: color.NRGBA{R: 127, G: 0, B: 0, A: 255},
+		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
 		Cells: [][]int{{0}, {0}, {0}, {0}},
 	}
 	var ops op.Ops
@@ -81,7 +81,7 @@ func run(w *app.Window) error {
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 
-			paint.ColorOp{Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}}.Add(gtx.Ops)
+			paint.ColorOp{Color: color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 
 			m.Layout(gtx)
