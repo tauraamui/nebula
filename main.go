@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -8,11 +9,13 @@ import (
 
 	"gioui.org/app"
 	"gioui.org/f32"
+	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 )
 
 type Matrix struct {
@@ -24,8 +27,9 @@ const (
 	cellWidth   = 150
 	cellHeight  = 50
 	cellPadding = 2
-	zoomLevel   = 0.72
 )
+
+var zoomLevel unit.Dp = 100
 
 func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
 	totalSize := image.Point{}
@@ -56,6 +60,10 @@ func main() {
 	app.Main()
 }
 
+func scrollHandler() {
+
+}
+
 func run(w *app.Window) error {
 	m := Matrix{
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
@@ -76,7 +84,24 @@ func run(w *app.Window) error {
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 
-			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: zoomLevel, Y: zoomLevel})).Push(gtx.Ops)
+			po := pointer.InputOp{Tag: 0, Types: pointer.Scroll, ScrollBounds: image.Rect(-3, -3, 3, 3)}
+			po.Add(gtx.Ops)
+
+			for _, event := range gtx.Queue.Events(0) {
+				if pe, ok := event.(pointer.Event); ok {
+					if pe.Type == pointer.Scroll {
+						zoomLevel += unit.Dp(pe.Scroll.Y)
+						if zoomLevel < 5 {
+							zoomLevel = 5
+						} else if zoomLevel > 300 {
+							zoomLevel = 300
+						}
+						fmt.Printf("ZOOM: %v\n", zoomLevel)
+					}
+				}
+			}
+
+			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevel) / 110, Y: float32(zoomLevel) / 110})).Push(gtx.Ops)
 
 			paint.ColorOp{Color: color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
