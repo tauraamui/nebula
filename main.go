@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -24,20 +23,23 @@ type Matrix struct {
 }
 
 const (
-	cellWidth   = 150
-	cellHeight  = 50
-	cellPadding = 2
+	cellWidth   unit.Dp = 150
+	cellHeight  unit.Dp = 50
+	cellPadding unit.Dp = 2
 )
 
 var zoomLevel unit.Dp = 100
 
 func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
+	cellWidthPx := gtx.Dp(cellWidth)
+	cellHeightPx := gtx.Dp(cellHeight)
+	cellPaddingPx := gtx.Dp(cellPadding)
 	totalSize := image.Point{}
 	for x, row := range m.Cells {
 		for y := range row {
-			cell := image.Rect((cellWidth*x)+cellPadding, (y*cellHeight)+cellPadding, ((cellWidth * x) + cellWidth), ((cellHeight * y) + cellHeight))
-			cell.Min = cell.Min.Add(image.Pt(cellPadding, cellPadding))
-			cell.Max = cell.Max.Add(image.Pt(cellPadding, cellPadding))
+			cell := image.Rect((gtx.Dp(cellWidth)*x)+cellPaddingPx, (y*cellHeightPx)+cellPaddingPx, ((cellWidthPx * x) + cellWidthPx), ((cellHeightPx * y) + cellHeightPx))
+			cell.Min = cell.Min.Add(image.Pt(cellPaddingPx, cellPaddingPx))
+			cell.Max = cell.Max.Add(image.Pt(cellPaddingPx, cellPaddingPx))
 			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
 			totalSize.Add(cell.Bounds().Size())
 			paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
@@ -58,10 +60,6 @@ func main() {
 		os.Exit(0)
 	}()
 	app.Main()
-}
-
-func scrollHandler() {
-
 }
 
 func run(w *app.Window) error {
@@ -96,12 +94,12 @@ func run(w *app.Window) error {
 						} else if zoomLevel > 300 {
 							zoomLevel = 300
 						}
-						fmt.Printf("ZOOM: %v\n", zoomLevel)
 					}
 				}
 			}
 
-			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevel) / 110, Y: float32(zoomLevel) / 110})).Push(gtx.Ops)
+			zoomLevelPx := gtx.Dp(zoomLevel)
+			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx) / 110, Y: float32(zoomLevelPx) / 110})).Push(gtx.Ops)
 
 			paint.ColorOp{Color: color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
