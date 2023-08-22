@@ -23,21 +23,25 @@ type Matrix struct {
 const (
 	cellWidth   = 150
 	cellHeight  = 50
-	cellPadding = 4
+	cellPadding = 2
 	zoomLevel   = 0.72
 )
 
 func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
+	totalSize := image.Point{}
 	for x, row := range m.Cells {
 		for y := range row {
 			cell := image.Rect((cellWidth*x)+cellPadding, (y*cellHeight)+cellPadding, ((cellWidth * x) + cellWidth), ((cellHeight * y) + cellHeight))
-			cl := clip.Rect{Min: cell.Min.Add(image.Pt(cellPadding, cellPadding)), Max: cell.Max.Add(image.Pt(cellPadding, cellPadding))}.Push(gtx.Ops)
+			cell.Min = cell.Min.Add(image.Pt(cellPadding, cellPadding))
+			cell.Max = cell.Max.Add(image.Pt(cellPadding, cellPadding))
+			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
+			totalSize.Add(cell.Bounds().Size())
 			paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 			cl.Pop()
 		}
 	}
-	return layout.Dimensions{Size: image.Pt(100, 200)}
+	return layout.Dimensions{Size: totalSize}
 }
 
 func main() {
@@ -57,6 +61,12 @@ func run(w *app.Window) error {
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
 		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}, {0, 0}},
 	}
+
+	for x := 0; x < len(m.Cells); x++ {
+		ext := make([]int, 8)
+		m.Cells[x] = append(m.Cells[x], ext...)
+	}
+
 	var ops op.Ops
 	for {
 		e := <-w.Events()
