@@ -18,18 +18,17 @@ import (
 	"gioui.org/widget/material"
 )
 
-type Matrix struct {
-	Color color.NRGBA
-	Cells [][]int
-}
-
 const (
 	cellWidth   unit.Dp = 130
 	cellHeight  unit.Dp = 30
 	cellPadding unit.Dp = 2
 )
 
-var zoomLevel unit.Dp = 100
+type Matrix struct {
+	Pos   image.Point
+	Color color.NRGBA
+	Cells [][]int
+}
 
 func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
 	cellWidthPx := gtx.Dp(cellWidth)
@@ -38,7 +37,7 @@ func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
 	totalSize := image.Point{}
 	for x, row := range m.Cells {
 		for y := range row {
-			cell := image.Rect((gtx.Dp(cellWidth)*x)+cellPaddingPx, (y*cellHeightPx)+cellPaddingPx, ((cellWidthPx * x) + cellWidthPx), ((cellHeightPx * y) + cellHeightPx))
+			cell := image.Rect(m.Pos.X+(cellWidthPx*x)+cellPaddingPx, m.Pos.Y+(y*cellHeightPx)+cellPaddingPx, m.Pos.X+((cellWidthPx*x)+cellWidthPx), m.Pos.Y+((cellHeightPx*y)+cellHeightPx))
 			cell.Min = cell.Min.Add(image.Pt(cellPaddingPx, cellPaddingPx))
 			cell.Max = cell.Max.Add(image.Pt(cellPaddingPx, cellPaddingPx))
 			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
@@ -65,12 +64,13 @@ func main() {
 
 func loop(w *app.Window) error {
 	m := Matrix{
+		Pos:   image.Pt(20, 20),
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
 		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}, {0, 0}},
 	}
 
 	for x := 0; x < len(m.Cells); x++ {
-		ext := make([]int, 8)
+		ext := make([]int, 3)
 		m.Cells[x] = append(m.Cells[x], ext...)
 	}
 	th := material.NewTheme()
