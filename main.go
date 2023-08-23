@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -23,8 +24,8 @@ type Matrix struct {
 }
 
 const (
-	cellWidth   unit.Dp = 150
-	cellHeight  unit.Dp = 50
+	cellWidth   unit.Dp = 130
+	cellHeight  unit.Dp = 30
 	cellPadding unit.Dp = 2
 )
 
@@ -73,6 +74,8 @@ func run(w *app.Window) error {
 		m.Cells[x] = append(m.Cells[x], ext...)
 	}
 
+	w.Option(app.Decorated(false))
+
 	var ops op.Ops
 	for {
 		e := <-w.Events()
@@ -82,21 +85,26 @@ func run(w *app.Window) error {
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 
-			po := pointer.InputOp{Tag: 0, Types: pointer.Scroll, ScrollBounds: image.Rect(-3, -3, 3, 3)}
+			po := pointer.InputOp{Tag: 0, Types: pointer.Scroll | pointer.Drag, ScrollBounds: image.Rect(-3, -3, 3, 3)}
 			po.Add(gtx.Ops)
 
 			for _, event := range gtx.Queue.Events(0) {
 				if pe, ok := event.(pointer.Event); ok {
-					if pe.Type == pointer.Scroll {
+					switch pe.Type {
+					case pointer.Scroll:
 						zoomLevel += unit.Dp(pe.Scroll.Y)
 						if zoomLevel < 5 {
 							zoomLevel = 5
 						} else if zoomLevel > 300 {
 							zoomLevel = 300
 						}
+					case pointer.Drag:
+						fmt.Printf("DRAG: %+v\n", pe.Position)
 					}
 				}
 			}
+
+			op.Offset(image.Pt(30, 10)).Push(gtx.Ops)
 
 			zoomLevelPx := gtx.Dp(zoomLevel)
 			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx) / 110, Y: float32(zoomLevelPx) / 110})).Push(gtx.Ops)
