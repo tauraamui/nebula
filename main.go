@@ -1,21 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"log"
 	"os"
 
 	"gioui.org/app"
-	"gioui.org/f32"
-	"gioui.org/io/pointer"
+	"gioui.org/font/gofont"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
 	"gioui.org/unit"
+	"gioui.org/widget/material"
 )
 
 type Matrix struct {
@@ -54,7 +54,7 @@ func (m Matrix) Layout(gtx layout.Context) layout.Dimensions {
 func main() {
 	go func() {
 		w := app.NewWindow()
-		err := run(w)
+		err := loop(w)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -63,7 +63,7 @@ func main() {
 	app.Main()
 }
 
-func run(w *app.Window) error {
+func loop(w *app.Window) error {
 	m := Matrix{
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
 		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}, {0, 0}},
@@ -73,9 +73,8 @@ func run(w *app.Window) error {
 		ext := make([]int, 8)
 		m.Cells[x] = append(m.Cells[x], ext...)
 	}
-
-	w.Option(app.Decorated(false))
-
+	th := material.NewTheme()
+	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
 	for {
 		e := <-w.Events()
@@ -84,39 +83,10 @@ func run(w *app.Window) error {
 			return e.Err
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
-
-			po := pointer.InputOp{Tag: 0, Types: pointer.Scroll | pointer.Drag, ScrollBounds: image.Rect(-3, -3, 3, 3)}
-			po.Add(gtx.Ops)
-
-			for _, event := range gtx.Queue.Events(0) {
-				if pe, ok := event.(pointer.Event); ok {
-					switch pe.Type {
-					case pointer.Scroll:
-						zoomLevel += unit.Dp(pe.Scroll.Y)
-						if zoomLevel < 5 {
-							zoomLevel = 5
-						} else if zoomLevel > 300 {
-							zoomLevel = 300
-						}
-					case pointer.Drag:
-						fmt.Printf("DRAG: %+v\n", pe.Position)
-					}
-				}
-			}
-
-			op.Offset(image.Pt(30, 10)).Push(gtx.Ops)
-
-			zoomLevelPx := gtx.Dp(zoomLevel)
-			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx) / 110, Y: float32(zoomLevelPx) / 110})).Push(gtx.Ops)
-
 			paint.ColorOp{Color: color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
-
 			m.Layout(gtx)
-
 			e.Frame(gtx.Ops)
-
-			scale.Pop()
 		}
 	}
 }
