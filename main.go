@@ -170,6 +170,7 @@ func (d *Drag) Events(cfg unit.Metric, q event.Queue, diffUpdated func(diff f32.
 			d.dragging = true
 			d.pid = e.PointerID
 			d.start = e.Position
+			d.lastDragPos = d.start
 		case pointer.Drag:
 			if !d.dragging || e.PointerID != d.pid {
 				continue
