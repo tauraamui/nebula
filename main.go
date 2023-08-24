@@ -43,8 +43,10 @@ func (m *Matrix) Layout(gtx layout.Context) layout.Dimensions {
 			cell := image.Rect(m.Pos.X+(cellWidthPx*x)+cellPaddingPx, m.Pos.Y+(y*cellHeightPx)+cellPaddingPx, m.Pos.X+((cellWidthPx*x)+cellWidthPx), m.Pos.Y+((cellHeightPx*y)+cellHeightPx))
 			cell.Min = cell.Min.Add(image.Pt(cellPaddingPx, cellPaddingPx))
 			cell.Max = cell.Max.Add(image.Pt(cellPaddingPx, cellPaddingPx))
-			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
-			totalSize = totalSize.Add(cell.Bounds().Size()) // FIX:(tauraamui) this seems very wrong, like wtf
+			rect := clip.Rect{Min: cell.Min, Max: cell.Max}
+			cl := rect.Push(gtx.Ops)
+			totalSize.X += rect.Max.X - rect.Min.X
+			totalSize.Y += rect.Max.Y - rect.Min.Y
 			paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 			cl.Pop()
@@ -70,13 +72,15 @@ func loop(w *app.Window) error {
 	m := &Matrix{
 		Pos:   image.Pt(20, 20),
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
-		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}, {0, 0}},
+		Cells: [][]int{{0}},
 	}
 
-	for x := 0; x < len(m.Cells); x++ {
-		ext := make([]int, 3)
-		m.Cells[x] = append(m.Cells[x], ext...)
-	}
+	/*
+		for x := 0; x < len(m.Cells); x++ {
+			ext := make([]int, 3)
+			m.Cells[x] = append(m.Cells[x], ext...)
+		}
+	*/
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
@@ -87,21 +91,23 @@ func loop(w *app.Window) error {
 		case system.DestroyEvent:
 			return e.Err
 		case system.FrameEvent:
+			ops.Reset()
 			gtx := layout.NewContext(&ops, e)
-
-			ma := image.Rect(m.Pos.X, m.Pos.Y, m.Pos.X+m.Size.X, m.Pos.Y+m.Size.Y)
-			fmt.Printf("%+v\n", ma)
-			stack := clip.Rect(ma).Push(gtx.Ops)
-			drag.Add(gtx.Ops)
-			stack.Pop()
-
-			if drag.Dragging() {
-				fmt.Println("DRAGGING")
-			}
 
 			paint.ColorOp{Color: color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 			m.Layout(gtx)
+
+			ma := image.Rect(m.Pos.X, m.Pos.Y, m.Pos.X+m.Size.X, m.Pos.Y+m.Size.Y)
+			stack := clip.Rect(ma).Push(gtx.Ops)
+			drag.Add(gtx.Ops)
+			stack.Pop()
+
+			de := drag.Events(unit.Metric{}, gtx.Queue, gesture.Both)
+			for i := 0; i < len(de); i++ {
+				fmt.Printf("DE: %+v\n", de)
+			}
+
 			e.Frame(gtx.Ops)
 		}
 	}
