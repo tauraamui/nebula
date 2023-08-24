@@ -7,13 +7,10 @@ import (
 	"os"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/paint"
-	"gioui.org/text"
-	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/widgets"
 )
 
@@ -42,8 +39,6 @@ func loop(w *app.Window) error {
 		Cells: [][]int{{0, 0, 0, 0}, {0, 0, 0, 0}},
 	}
 
-	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
 	for {
 		e := <-w.Events()
