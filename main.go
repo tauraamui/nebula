@@ -9,7 +9,8 @@ import (
 	"gioui.org/app"
 	"gioui.org/f32"
 	"gioui.org/font/gofont"
-	"gioui.org/gesture"
+	"gioui.org/io/event"
+	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -21,9 +22,9 @@ import (
 )
 
 const (
-	cellWidth   unit.Dp = 130
-	cellHeight  unit.Dp = 30
-	cellPadding unit.Dp = 2
+	cellWidth   = 130
+	cellHeight  = 30
+	cellPadding = 2
 )
 
 type Matrix struct {
@@ -34,15 +35,12 @@ type Matrix struct {
 }
 
 func (m *Matrix) Layout(gtx layout.Context) layout.Dimensions {
-	cellWidthPx := gtx.Dp(cellWidth)
-	cellHeightPx := gtx.Dp(cellHeight)
-	cellPaddingPx := gtx.Dp(cellPadding)
 	totalSize := image.Point{}
 	for x, row := range m.Cells {
 		for y := range row {
-			cell := image.Rect(m.Pos.X+(cellWidthPx*x)+cellPaddingPx, m.Pos.Y+(y*cellHeightPx)+cellPaddingPx, m.Pos.X+((cellWidthPx*x)+cellWidthPx), m.Pos.Y+((cellHeightPx*y)+cellHeightPx))
-			cell.Min = cell.Min.Add(image.Pt(cellPaddingPx, cellPaddingPx))
-			cell.Max = cell.Max.Add(image.Pt(cellPaddingPx, cellPaddingPx))
+			cell := image.Rect(m.Pos.X+(cellWidth*x)+cellPadding, m.Pos.Y+(y*cellHeight)+cellPadding, m.Pos.X+((cellWidth*x)+cellWidth), m.Pos.Y+((cellHeight*y)+cellHeight))
+			cell.Min = cell.Min.Add(image.Pt(cellPadding, cellPadding))
+			cell.Max = cell.Max.Add(image.Pt(cellPadding, cellPadding))
 			rect := clip.Rect{Min: cell.Min, Max: cell.Max}
 			cl := rect.Push(gtx.Ops)
 			totalSize.X += rect.Max.X - rect.Min.X
@@ -84,7 +82,7 @@ func loop(w *app.Window) error {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
-	var drag gesture.Drag
+	var drag Drag
 	for {
 		e := <-w.Events()
 		switch e := e.(type) {
@@ -103,20 +101,99 @@ func loop(w *app.Window) error {
 			drag.Add(gtx.Ops)
 			stack.Pop()
 
-			pe := drag.Events(unit.Metric{}, gtx.Queue, gesture.Both)
-			lastDragPos := f32.Point{}
-			for _, de := range pe {
-				if drag.Dragging() {
-					if lastDragPos.X > 0 && lastDragPos.Y > 0 {
-						diff := f32.Pt(de.Position.X-lastDragPos.X, de.Position.Y-lastDragPos.Y)
-						m.Pos = m.Pos.Add(image.Pt(gtx.Dp(unit.Dp(diff.X)), gtx.Dp(unit.Dp(diff.Y))))
-					}
-					lastDragPos = de.Position
-
-				}
-			}
+			drag.Events(unit.Metric{PxPerDp: 1, PxPerSp: 1}, gtx.Queue, func(diff f32.Point) {
+				m.Pos = m.Pos.Sub(image.Pt(drag.diff.Round().X, drag.diff.Round().Y))
+			})
 
 			e.Frame(gtx.Ops)
 		}
 	}
 }
+
+const touchSlop = unit.Dp(3)
+
+type Axis uint8
+
+const (
+	Horizontal Axis = iota
+	Vertical
+	Both
+)
+
+func (a Axis) String() string {
+	switch a {
+	case Horizontal:
+		return "Horizontal"
+	case Vertical:
+		return "Vertical"
+	default:
+		panic("invalid Axis")
+	}
+}
+
+// Drag detects drag gestures in the form of pointer.Drag events.
+type Drag struct {
+	diff        f32.Point
+	dragging    bool
+	lastDragPos f32.Point
+	pressed     bool
+	pid         pointer.ID
+	start       f32.Point
+}
+
+// Add the handler to the operation list to receive drag events.
+func (d *Drag) Add(ops *op.Ops) {
+	pointer.InputOp{
+		Tag:   d,
+		Types: pointer.Press | pointer.Drag | pointer.Release,
+	}.Add(ops)
+}
+
+// Events returns the next drag events, if any.
+func (d *Drag) Events(cfg unit.Metric, q event.Queue, diffUpdated func(diff f32.Point)) []pointer.Event {
+	var events []pointer.Event
+	for _, e := range q.Events(d) {
+		e, ok := e.(pointer.Event)
+		if !ok {
+			continue
+		}
+
+		switch e.Type {
+		case pointer.Press:
+			if !(e.Buttons == pointer.ButtonPrimary || e.Source == pointer.Touch) {
+				continue
+			}
+			d.pressed = true
+			if d.dragging {
+				continue
+			}
+			d.dragging = true
+			d.pid = e.PointerID
+			d.start = e.Position
+		case pointer.Drag:
+			if !d.dragging || e.PointerID != d.pid {
+				continue
+			}
+			diff := d.lastDragPos.Sub(e.Position)
+			d.diff = diff
+			d.lastDragPos = e.Position
+			diffUpdated(d.diff)
+		case pointer.Release, pointer.Cancel:
+			d.pressed = false
+			if !d.dragging || e.PointerID != d.pid {
+				continue
+			}
+			d.dragging = false
+		}
+
+		events = append(events, e)
+	}
+
+	return events
+}
+
+// Dragging reports whether it is currently in use.
+func (d *Drag) Dragging() bool { return d.dragging }
+
+// Pressed returns whether a pointer is pressing.
+func (d *Drag) Pressed() bool { return d.pressed }
