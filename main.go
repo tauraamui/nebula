@@ -70,15 +70,14 @@ func loop(w *app.Window) error {
 	m := &Matrix{
 		Pos:   image.Pt(20, 20),
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
-		Cells: [][]int{{0}},
+		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}},
 	}
 
-	/*
-		for x := 0; x < len(m.Cells); x++ {
-			ext := make([]int, 3)
-			m.Cells[x] = append(m.Cells[x], ext...)
-		}
-	*/
+	for x := 0; x < len(m.Cells); x++ {
+		ext := make([]int, 3)
+		m.Cells[x] = append(m.Cells[x], ext...)
+	}
+
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
@@ -107,27 +106,6 @@ func loop(w *app.Window) error {
 
 			e.Frame(gtx.Ops)
 		}
-	}
-}
-
-const touchSlop = unit.Dp(3)
-
-type Axis uint8
-
-const (
-	Horizontal Axis = iota
-	Vertical
-	Both
-)
-
-func (a Axis) String() string {
-	switch a {
-	case Horizontal:
-		return "Horizontal"
-	case Vertical:
-		return "Vertical"
-	default:
-		panic("invalid Axis")
 	}
 }
 
