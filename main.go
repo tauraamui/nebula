@@ -53,7 +53,9 @@ func loop(w *app.Window) error {
 			paint.PaintOp{}.Add(gtx.Ops)
 
 			m.Layout(gtx)
+			m.Update(gtx)
 			m2.Layout(gtx)
+			m2.Update(gtx)
 
 			e.Frame(gtx.Ops)
 		}

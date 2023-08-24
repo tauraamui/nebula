@@ -30,22 +30,25 @@ type Matrix struct {
 	cellWidth,
 	cellHeight,
 	cellPadding int
+	drag *gesturex.Drag
 }
 
 func (m *Matrix) Layout(gtx layout.Context) layout.Dimensions {
-	dimensions := render(gtx, m)
+	return render(gtx, m)
+}
 
-	drag := gesturex.Drag{}
+func (m *Matrix) Update(gtx layout.Context) {
+	if m.drag == nil {
+		m.drag = &gesturex.Drag{}
+	}
 	ma := image.Rect(m.Pos.X, m.Pos.Y, m.Pos.X+m.Size.X, m.Pos.Y+m.Size.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
-	drag.Add(gtx.Ops)
+	m.drag.Add(gtx.Ops)
 	stack.Pop()
 
-	drag.Events(unit.Metric{PxPerDp: 1, PxPerSp: 1}, gtx.Queue, func(diff f32.Point) {
+	m.drag.Events(unit.Metric{PxPerDp: 1, PxPerSp: 1}, gtx.Queue, func(diff f32.Point) {
 		m.Pos = m.Pos.Sub(image.Pt(diff.Round().X, diff.Round().Y))
 	})
-
-	return dimensions
 }
 
 func render(gtx layout.Context, m *Matrix) layout.Dimensions {
