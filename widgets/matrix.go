@@ -6,9 +6,9 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/gesturex"
@@ -62,8 +62,9 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 			l := material.Label(th, unit.Sp(23), string(content))
 			maroon := color.NRGBA{R: 127, G: 0, B: 0, A: 255}
 			l.Color = maroon
-			l.Alignment = text.Middle
+			off := op.Offset(cell.Min.Add(image.Pt(gtx.Sp(3), 0))).Push(gtx.Ops)
 			l.Layout(gtx)
+			off.Pop()
 			cl.Pop()
 		}
 	}
