@@ -109,7 +109,7 @@ func loop(w *app.Window) error {
 				if drag.Dragging() {
 					if lastDragPos.X > 0 && lastDragPos.Y > 0 {
 						diff := f32.Pt(de.Position.X-lastDragPos.X, de.Position.Y-lastDragPos.Y)
-						m.Pos = m.Pos.Add(image.Pt(diff.Round().X, diff.Round().Y))
+						m.Pos = m.Pos.Add(image.Pt(gtx.Dp(unit.Dp(diff.X)), gtx.Dp(unit.Dp(diff.Y))))
 					}
 					lastDragPos = de.Position
 
