@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"log"
 	"os"
 
 	"gioui.org/app"
+	"gioui.org/f32"
 	"gioui.org/font/gofont"
 	"gioui.org/gesture"
 	"gioui.org/io/system"
@@ -103,9 +103,17 @@ func loop(w *app.Window) error {
 			drag.Add(gtx.Ops)
 			stack.Pop()
 
-			de := drag.Events(unit.Metric{}, gtx.Queue, gesture.Both)
-			for i := 0; i < len(de); i++ {
-				fmt.Printf("DE: %+v\n", de)
+			pe := drag.Events(unit.Metric{}, gtx.Queue, gesture.Both)
+			lastDragPos := f32.Point{}
+			for _, de := range pe {
+				if drag.Dragging() {
+					if lastDragPos.X > 0 && lastDragPos.Y > 0 {
+						diff := f32.Pt(de.Position.X-lastDragPos.X, de.Position.Y-lastDragPos.Y)
+						m.Pos = m.Pos.Add(image.Pt(diff.Round().X, diff.Round().Y))
+					}
+					lastDragPos = de.Position
+
+				}
 			}
 
 			e.Frame(gtx.Ops)
