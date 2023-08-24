@@ -36,22 +36,28 @@ type Matrix struct {
 
 func (m *Matrix) Layout(gtx layout.Context) layout.Dimensions {
 	totalSize := image.Point{}
-	for x, row := range m.Cells {
-		for y := range row {
+	totalX := 0
+	totalY := 0
+	cellSize := image.Point{X: cellWidth, Y: cellHeight}
+	for x, column := range m.Cells {
+		totalX += 1
+		for y := range column {
+			if totalX == 1 {
+				totalY += 1
+			}
 			cell := image.Rect(m.Pos.X+(cellWidth*x)+cellPadding, m.Pos.Y+(y*cellHeight)+cellPadding, m.Pos.X+((cellWidth*x)+cellWidth), m.Pos.Y+((cellHeight*y)+cellHeight))
 			cell.Min = cell.Min.Add(image.Pt(cellPadding, cellPadding))
 			cell.Max = cell.Max.Add(image.Pt(cellPadding, cellPadding))
-			rect := clip.Rect{Min: cell.Min, Max: cell.Max}
-			cl := rect.Push(gtx.Ops)
-			totalSize.X += rect.Max.X - rect.Min.X
-			totalSize.Y += rect.Max.Y - rect.Min.Y
+			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
 			paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 			cl.Pop()
 		}
 	}
+	totalSize.X = totalX * cellSize.X
+	totalSize.Y = totalY * cellSize.Y
 	m.Size = totalSize
-	return layout.Dimensions{Size: totalSize}
+	return layout.Dimensions{Size: m.Size}
 }
 
 func main() {
@@ -70,12 +76,7 @@ func loop(w *app.Window) error {
 	m := &Matrix{
 		Pos:   image.Pt(20, 20),
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
-		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}},
-	}
-
-	for x := 0; x < len(m.Cells); x++ {
-		ext := make([]int, 3)
-		m.Cells[x] = append(m.Cells[x], ext...)
+		Cells: [][]int{{0, 0}, {0, 0}, {0, 0}, {0, 0}},
 	}
 
 	th := material.NewTheme()
