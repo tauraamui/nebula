@@ -4,14 +4,12 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
-	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
 )
 
 // Drag detects drag gestures in the form of pointer.Drag events.
 type Drag struct {
-	listenable  Listenable
 	diff        f32.Point
 	dragging    bool
 	lastDragPos f32.Point
@@ -20,15 +18,10 @@ type Drag struct {
 	start       f32.Point
 }
 
-type Listenable interface {
-	Layout(layout.Context) layout.Dimensions
-}
-
 // Add the handler to the operation list to receive drag events.
-func (d *Drag) Add(ops *op.Ops, w Listenable) {
-	d.listenable = w
+func (d *Drag) Add(ops *op.Ops) {
 	pointer.InputOp{
-		Tag:   w,
+		Tag:   d,
 		Types: pointer.Press | pointer.Drag | pointer.Release,
 	}.Add(ops)
 }
@@ -36,7 +29,7 @@ func (d *Drag) Add(ops *op.Ops, w Listenable) {
 // Events returns the next drag events, if any.
 func (d *Drag) Events(cfg unit.Metric, q event.Queue, diffUpdated func(diff f32.Point)) []pointer.Event {
 	var events []pointer.Event
-	for _, e := range q.Events(d.listenable) {
+	for _, e := range q.Events(d) {
 		e, ok := e.(pointer.Event)
 		if !ok {
 			continue

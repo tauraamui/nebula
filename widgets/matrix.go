@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 
+	"gioui.org/f32"
 	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -26,19 +27,31 @@ type Matrix struct {
 	Size image.Point
 	Color color.NRGBA
 	Cells [][]int
-	drag  *gesturex.Drag
 	cellWidth,
 	cellHeight,
 	cellPadding int
 }
 
 func (m *Matrix) Layout(gtx layout.Context) layout.Dimensions {
+	dimensions := render(gtx, m)
+
+	drag := gesturex.Drag{}
+	ma := image.Rect(m.Pos.X, m.Pos.Y, m.Pos.X+m.Size.X, m.Pos.Y+m.Size.Y)
+	stack := clip.Rect(ma).Push(gtx.Ops)
+	drag.Add(gtx.Ops)
+	stack.Pop()
+
+	drag.Events(unit.Metric{PxPerDp: 1, PxPerSp: 1}, gtx.Queue, func(diff f32.Point) {
+		m.Pos = m.Pos.Sub(image.Pt(diff.Round().X, diff.Round().Y))
+	})
+
+	return dimensions
+}
+
+func render(gtx layout.Context, m *Matrix) layout.Dimensions {
 	m.cellWidth = gtx.Dp(cellWidth)
 	m.cellHeight = gtx.Dp(cellHeight)
 	m.cellPadding = gtx.Dp(cellPadding)
-	if m.drag == nil {
-		m.drag = &gesturex.Drag{}
-	}
 
 	totalSize := image.Point{}
 	totalX := 0
