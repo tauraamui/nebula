@@ -54,7 +54,7 @@ func loop(w *app.Window) error {
 			ops.Reset()
 			gtx := layout.NewContext(&ops, e)
 
-			paint.ColorOp{Color: color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 255}}.Add(gtx.Ops)
+			paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 
 			m.Layout(gtx, th)
