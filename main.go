@@ -1,12 +1,12 @@
 package main
 
 import (
-	"image"
 	"image/color"
 	"log"
 	"os"
 
 	"gioui.org/app"
+	"gioui.org/f32"
 	"gioui.org/font/gofont"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -31,13 +31,13 @@ func main() {
 
 func loop(w *app.Window) error {
 	m := &widgets.Matrix{
-		Pos:   image.Pt(20, 20),
+		Pos:   f32.Pt(20, 20),
 		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
 		Cells: [][][]byte{{[]byte("A"), []byte("A2"), []byte("A3")}, {[]byte("B"), []byte("B2"), []byte("B3")}},
 	}
 
 	m2 := &widgets.Matrix{
-		Pos:   image.Pt(200, 200),
+		Pos:   f32.Pt(200, 200),
 		Color: color.NRGBA{R: 110, G: 0xff, B: 0xff, A: 255},
 		Cells: [][][]byte{{[]byte("random"), []byte("0.433"), []byte("shitzyxcfe3kqt")}, {[]byte("A1"), []byte("A3"), []byte("C")}},
 	}

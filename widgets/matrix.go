@@ -26,7 +26,7 @@ const (
 
 type Matrix struct {
 	Pos,
-	Size image.Point
+	Size f32.Point
 	Color color.NRGBA
 	Cells [][][]byte
 	cellWidth,
@@ -43,10 +43,10 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 	posX := gtx.Dp(unit.Dp(m.Pos.X))
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
 
-	totalSize := image.Point{}
+	totalSize := f32.Point{}
 	totalX := 0
 	totalY := 0
-	cellSize := image.Point{X: gtx.Dp(cellWidth), Y: gtx.Dp(cellHeight)}
+	cellSize := f32.Point{X: float32(gtx.Dp(cellWidth)), Y: float32(gtx.Dp(cellHeight))}
 	for x, column := range m.Cells {
 		totalX += 1
 		for y, content := range column {
@@ -71,10 +71,10 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 			cl.Pop()
 		}
 	}
-	totalSize.X = totalX * cellSize.X
-	totalSize.Y = totalY * cellSize.Y
+	totalSize.X = float32(totalX) * cellSize.X
+	totalSize.Y = float32(totalY) * cellSize.Y
 	m.Size = totalSize
-	return layout.Dimensions{Size: m.Size}
+	return layout.Dimensions{Size: m.Size.Round()}
 }
 
 func (m *Matrix) Update(gtx layout.Context) {
@@ -82,18 +82,18 @@ func (m *Matrix) Update(gtx layout.Context) {
 		m.drag = &gesturex.Drag{}
 	}
 
-	posX := gtx.Dp(unit.Dp(m.Pos.X))
-	posY := gtx.Dp(unit.Dp(m.Pos.Y))
-	sizeX := m.Size.X
-	sizeY := m.Size.Y
+	pos := f32.Pt(float32(gtx.Dp(unit.Dp(m.Pos.X))), float32(gtx.Dp(unit.Dp(m.Pos.Y))))
+	size := f32.Pt(m.Size.X, m.Size.Y)
 
-	ma := image.Rect(posX, posY, posX+sizeX, posY+sizeY)
+	posPt := pos.Round()
+	sizePt := size.Round()
+	ma := image.Rect(posPt.X, posPt.Y, posPt.X+sizePt.X, posPt.Y+sizePt.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.drag.Add(gtx.Ops)
 	stack.Pop()
 
-	m.drag.Events(unit.Metric{}, gtx.Queue, func(diff f32.Point) {
-		diff = diff.Div(float32(gtx.Dp(1)))
-		m.Pos = m.Pos.Sub(image.Pt(diff.Round().X, diff.Round().Y))
+	m.drag.Events(gtx.Metric, gtx.Queue, func(diff f32.Point) {
+		scaledDiff := diff.Div(float32(gtx.Dp(1)))
+		m.Pos = m.Pos.Sub(scaledDiff)
 	})
 }
