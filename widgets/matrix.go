@@ -84,8 +84,8 @@ func (m *Matrix) Update(gtx layout.Context) {
 
 	posX := gtx.Dp(unit.Dp(m.Pos.X))
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
-	sizeX := gtx.Dp(unit.Dp(m.Size.X))
-	sizeY := gtx.Dp(unit.Dp(m.Size.Y))
+	sizeX := m.Size.X
+	sizeY := m.Size.Y
 
 	ma := image.Rect(posX, posY, posX+sizeX, posY+sizeY)
 	stack := clip.Rect(ma).Push(gtx.Ops)
