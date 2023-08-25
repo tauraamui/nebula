@@ -81,12 +81,18 @@ func (m *Matrix) Update(gtx layout.Context) {
 	if m.drag == nil {
 		m.drag = &gesturex.Drag{}
 	}
-	ma := image.Rect(m.Pos.X, m.Pos.Y, m.Pos.X+m.Size.X, m.Pos.Y+m.Size.Y)
+
+	posX := gtx.Dp(unit.Dp(m.Pos.X))
+	posY := gtx.Dp(unit.Dp(m.Pos.Y))
+	sizeX := gtx.Dp(unit.Dp(m.Size.X))
+	sizeY := gtx.Dp(unit.Dp(m.Size.Y))
+
+	ma := image.Rect(posX, posY, posX+sizeX, posY+sizeY)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.drag.Add(gtx.Ops)
 	stack.Pop()
 
-	m.drag.Events(unit.Metric{PxPerDp: 1, PxPerSp: 1}, gtx.Queue, func(diff f32.Point) {
+	m.drag.Events(unit.Metric{}, gtx.Queue, func(diff f32.Point) {
 		m.Pos = m.Pos.Sub(image.Pt(diff.Round().X, diff.Round().Y))
 	})
 }
