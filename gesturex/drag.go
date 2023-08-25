@@ -3,7 +3,6 @@ package gesturex
 import (
 	"gioui.org/f32"
 	"gioui.org/io/event"
-	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -38,15 +37,11 @@ func (d *Drag) Events(cfg unit.Metric, ops *op.Ops, q event.Queue, diffUpdated f
 }
 
 func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) pointer.Cursor {
-	if !e.Modifiers.Contain(key.ModCtrl) {
-		return pointer.CursorDefault
-	}
-
-	ptr := pointer.CursorGrab
+	ptr := pointer.CursorDefault
 
 	switch e.Type {
 	case pointer.Press:
-		if !(e.Buttons == pointer.ButtonPrimary || e.Source == pointer.Touch) {
+		if !(e.Buttons == pointer.ButtonSecondary || e.Source == pointer.Touch) {
 			return ptr
 		}
 
@@ -65,7 +60,7 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 		d.start = e.Position
 	case pointer.Release, pointer.Cancel:
 		d.pressed = false
-		ptr = pointer.CursorGrab
+		ptr = pointer.CursorDefault
 	}
 
 	return ptr
