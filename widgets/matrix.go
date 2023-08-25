@@ -40,6 +40,9 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 	m.cellHeight = gtx.Dp(cellHeight)
 	m.cellPadding = gtx.Dp(cellPadding)
 
+	posX := gtx.Dp(unit.Dp(m.Pos.X))
+	posY := gtx.Dp(unit.Dp(m.Pos.Y))
+
 	totalSize := image.Point{}
 	totalX := 0
 	totalY := 0
@@ -50,7 +53,7 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 			if totalX == 1 {
 				totalY += 1
 			}
-			cell := image.Rect(m.Pos.X+(m.cellWidth*x)+m.cellPadding, m.Pos.Y+(y*m.cellHeight)+m.cellPadding, m.Pos.X+((m.cellWidth*x)+m.cellWidth), m.Pos.Y+((m.cellHeight*y)+m.cellHeight))
+			cell := image.Rect(posX+(m.cellWidth*x)+m.cellPadding, posY+(y*m.cellHeight)+m.cellPadding, posX+((m.cellWidth*x)+m.cellWidth), posY+((m.cellHeight*y)+m.cellHeight))
 			cell.Min = cell.Min.Add(image.Pt(m.cellPadding, m.cellPadding))
 			cell.Max = cell.Max.Add(image.Pt(m.cellPadding, m.cellPadding))
 			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
