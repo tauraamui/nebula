@@ -63,8 +63,7 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 
 			cl = clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
 			l := material.Label(th, unit.Sp(23), string(content))
-			maroon := color.NRGBA{R: 127, G: 0, B: 0, A: 255}
-			l.Color = maroon
+			l.Color = color.NRGBA{R: 10, G: 10, B: 10, A: 255}
 			off := op.Offset(cell.Min.Add(image.Pt(gtx.Sp(3), 0))).Push(gtx.Ops)
 			l.Layout(gtx)
 			off.Pop()
