@@ -12,6 +12,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/gesturex"
+	"github.com/tauraamui/nebula/mat"
 )
 
 type Widget interface {
@@ -28,6 +29,7 @@ type Matrix struct {
 	Pos,
 	Size f32.Point
 	Color color.NRGBA
+	Data  *mat.Matrix
 	Cells [][][]byte
 	cellWidth,
 	cellHeight,
