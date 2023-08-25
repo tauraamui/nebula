@@ -3,6 +3,7 @@ package gesturex
 import (
 	"gioui.org/f32"
 	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -28,18 +29,19 @@ func (d *Drag) Add(ops *op.Ops) {
 // Events returns the next drag events, if any.
 func (d *Drag) Events(cfg unit.Metric, ops *op.Ops, q event.Queue, diffUpdated func(diff f32.Point)) {
 	for _, e := range q.Events(d) {
-		e, ok := e.(pointer.Event)
-		if !ok {
-			continue
+		if pe, ok := e.(pointer.Event); ok {
+			d.ptr = d.handlePointerEvent(pe, diffUpdated)
 		}
-
-		d.ptr = d.handlePointerEvent(e, diffUpdated)
 	}
 
 	pointer.Cursor.Add(d.ptr, ops)
 }
 
 func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) pointer.Cursor {
+	if !e.Modifiers.Contain(key.ModCtrl) {
+		return pointer.CursorDefault
+	}
+
 	ptr := pointer.CursorGrab
 
 	switch e.Type {
