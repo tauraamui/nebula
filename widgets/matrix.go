@@ -93,6 +93,7 @@ func (m *Matrix) Update(gtx layout.Context) {
 	stack.Pop()
 
 	m.drag.Events(unit.Metric{}, gtx.Queue, func(diff f32.Point) {
+		diff = diff.Div(float32(gtx.Dp(1)))
 		m.Pos = m.Pos.Sub(image.Pt(diff.Round().X, diff.Round().Y))
 	})
 }
