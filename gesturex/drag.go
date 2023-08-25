@@ -33,33 +33,40 @@ func (d *Drag) Events(cfg unit.Metric, ops *op.Ops, q event.Queue, diffUpdated f
 			continue
 		}
 
-		d.ptr = pointer.CursorGrab
-
-		switch e.Type {
-		case pointer.Press:
-			if !(e.Buttons == pointer.ButtonPrimary || e.Source == pointer.Touch) {
-				continue
-			}
-
-			d.pressed = true
-			d.ptr = pointer.CursorGrabbing
-			d.start = e.Position
-		case pointer.Move:
-			d.start = e.Position
-		case pointer.Drag:
-			d.dragging = d.pressed
-			if d.dragging {
-				d.ptr = pointer.CursorGrabbing
-				diff := d.start.Sub(e.Position)
-				diffUpdated(diff)
-			}
-			d.start = e.Position
-		case pointer.Release, pointer.Cancel:
-			d.pressed = false
-			d.ptr = pointer.CursorGrab
-		}
+		d.ptr = d.handlePointerEvent(e, diffUpdated)
 	}
+
 	pointer.Cursor.Add(d.ptr, ops)
+}
+
+func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) pointer.Cursor {
+	ptr := pointer.CursorGrab
+
+	switch e.Type {
+	case pointer.Press:
+		if !(e.Buttons == pointer.ButtonPrimary || e.Source == pointer.Touch) {
+			return ptr
+		}
+
+		d.pressed = true
+		ptr = pointer.CursorGrabbing
+		d.start = e.Position
+	case pointer.Move:
+		d.start = e.Position
+	case pointer.Drag:
+		d.dragging = d.pressed
+		if d.dragging {
+			ptr = pointer.CursorGrabbing
+			diff := d.start.Sub(e.Position)
+			cb(diff)
+		}
+		d.start = e.Position
+	case pointer.Release, pointer.Cancel:
+		d.pressed = false
+		ptr = pointer.CursorGrab
+	}
+
+	return ptr
 }
 
 // Dragging reports whether it is currently in use.
