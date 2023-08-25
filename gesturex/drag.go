@@ -11,6 +11,7 @@ import (
 // Drag detects drag gestures in the form of pointer.Drag events.
 type Drag struct {
 	pid pointer.ID
+	ptr pointer.Cursor
 	pressed,
 	dragging bool
 	start f32.Point
@@ -20,17 +21,19 @@ type Drag struct {
 func (d *Drag) Add(ops *op.Ops) {
 	pointer.InputOp{
 		Tag:   d,
-		Types: pointer.Press | pointer.Drag | pointer.Move | pointer.Release,
+		Types: pointer.Press | pointer.Enter | pointer.Leave | pointer.Drag | pointer.Move | pointer.Release,
 	}.Add(ops)
 }
 
 // Events returns the next drag events, if any.
-func (d *Drag) Events(cfg unit.Metric, q event.Queue, diffUpdated func(diff f32.Point)) {
+func (d *Drag) Events(cfg unit.Metric, ops *op.Ops, q event.Queue, diffUpdated func(diff f32.Point)) {
 	for _, e := range q.Events(d) {
 		e, ok := e.(pointer.Event)
 		if !ok {
 			continue
 		}
+
+		d.ptr = pointer.CursorGrab
 
 		switch e.Type {
 		case pointer.Press:
@@ -39,21 +42,24 @@ func (d *Drag) Events(cfg unit.Metric, q event.Queue, diffUpdated func(diff f32.
 			}
 
 			d.pressed = true
+			d.ptr = pointer.CursorGrabbing
 			d.start = e.Position
 		case pointer.Move:
 			d.start = e.Position
 		case pointer.Drag:
 			d.dragging = d.pressed
 			if d.dragging {
+				d.ptr = pointer.CursorGrabbing
 				diff := d.start.Sub(e.Position)
 				diffUpdated(diff)
 			}
 			d.start = e.Position
 		case pointer.Release, pointer.Cancel:
 			d.pressed = false
+			d.ptr = pointer.CursorGrab
 		}
-
 	}
+	pointer.Cursor.Add(d.ptr, ops)
 }
 
 // Dragging reports whether it is currently in use.

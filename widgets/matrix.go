@@ -90,10 +90,10 @@ func (m *Matrix) Update(gtx layout.Context) {
 	ma := image.Rect(posPt.X, posPt.Y, posPt.X+sizePt.X, posPt.Y+sizePt.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.drag.Add(gtx.Ops)
-	stack.Pop()
 
-	m.drag.Events(gtx.Metric, gtx.Queue, func(diff f32.Point) {
+	m.drag.Events(gtx.Metric, gtx.Ops, gtx.Queue, func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(gtx.Dp(1)))
 		m.Pos = m.Pos.Sub(scaledDiff)
 	})
+	stack.Pop()
 }
