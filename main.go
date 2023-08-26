@@ -39,6 +39,17 @@ func loop(w *app.Window) error {
 		}
 	*/
 
+	m := &widgets.Matrix{
+		Pos:   f32.Pt(100, 200),
+		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
+		Data: mat.NewDense(4, 1, []float64{
+			3,
+			9,
+			12,
+			48,
+		}),
+	}
+
 	m2 := &widgets.Matrix{
 		Pos:   f32.Pt(200, 200),
 		Color: color.NRGBA{R: 110, G: 0xff, B: 0xff, A: 255},
@@ -65,10 +76,8 @@ func loop(w *app.Window) error {
 			paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 
-			/*
-				m.Layout(gtx, th)
-				m.Update(gtx)
-			*/
+			m.Layout(gtx, th)
+			m.Update(gtx)
 			m2.Layout(gtx, th)
 			m2.Update(gtx)
 
