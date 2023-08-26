@@ -3,6 +3,7 @@ package widgets
 import (
 	"image"
 	"image/color"
+	"strconv"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -12,7 +13,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/gesturex"
-	"github.com/tauraamui/nebula/mat"
+	"gonum.org/v1/gonum/mat"
 )
 
 type Widget interface {
@@ -29,8 +30,7 @@ type Matrix struct {
 	Pos,
 	Size f32.Point
 	Color color.NRGBA
-	Data  *mat.Matrix
-	Cells [][][]byte
+	Data  *mat.Dense
 	cellWidth,
 	cellHeight,
 	cellPadding int
@@ -46,15 +46,11 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
 
 	totalSize := f32.Point{}
-	totalX := 0
-	totalY := 0
 	cellSize := f32.Point{X: float32(gtx.Dp(cellWidth)), Y: float32(gtx.Dp(cellHeight))}
-	for x, column := range m.Cells {
-		totalX += 1
-		for y, content := range column {
-			if totalX == 1 {
-				totalY += 1
-			}
+
+	rows, cols := m.Data.Dims()
+	for x := 0; x < cols; x++ {
+		for y := 0; y < rows; y++ {
 			cell := image.Rect(posX+(m.cellWidth*x)+m.cellPadding, posY+(y*m.cellHeight)+m.cellPadding, posX+((m.cellWidth*x)+m.cellWidth), posY+((m.cellHeight*y)+m.cellHeight))
 			cell.Min = cell.Min.Add(image.Pt(m.cellPadding, m.cellPadding))
 			cell.Max = cell.Max.Add(image.Pt(m.cellPadding, m.cellPadding))
@@ -64,7 +60,7 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 			cl.Pop()
 
 			cl = clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
-			l := material.Label(th, unit.Sp(23), string(content))
+			l := material.Label(th, unit.Sp(23), strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64))
 			l.Color = color.NRGBA{R: 10, G: 10, B: 10, A: 255}
 			off := op.Offset(cell.Min.Add(image.Pt(gtx.Sp(3), 0))).Push(gtx.Ops)
 			l.Layout(gtx)
@@ -72,8 +68,8 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 			cl.Pop()
 		}
 	}
-	totalSize.X = float32(totalX) * cellSize.X
-	totalSize.Y = float32(totalY) * cellSize.Y
+	totalSize.X = float32(rows) * cellSize.X
+	totalSize.Y = float32(cols) * cellSize.Y
 	m.Size = totalSize
 	return layout.Dimensions{Size: m.Size.Round()}
 }
