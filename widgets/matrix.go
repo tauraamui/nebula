@@ -68,8 +68,8 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 			cl.Pop()
 		}
 	}
-	totalSize.X = float32(rows) * cellSize.X
-	totalSize.Y = float32(cols) * cellSize.Y
+	totalSize.X = float32(cols) * cellSize.X
+	totalSize.Y = float32(rows) * cellSize.Y
 	m.Size = totalSize
 	return layout.Dimensions{Size: m.Size.Round()}
 }
