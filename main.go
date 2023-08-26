@@ -61,6 +61,20 @@ func loop(w *app.Window) error {
 		}),
 	}
 
+	c1 := mat.Col(nil, 0, m.Data)
+
+	c2 := mat.Col(nil, 1, m2.Data)
+	for i := 0; i < len(c1); i++ {
+		c1[i] += c2[i]
+	}
+
+	c1r, _ := m.Data.Dims()
+	m3 := &widgets.Matrix{
+		Pos:   f32.Pt(460, 200),
+		Color: color.NRGBA{R: 225, G: 110, B: 90, A: 255},
+		Data:  mat.NewDense(c1r, 1, c1),
+	}
+
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
@@ -80,6 +94,8 @@ func loop(w *app.Window) error {
 			m.Update(gtx)
 			m2.Layout(gtx, th)
 			m2.Update(gtx)
+			m3.Layout(gtx, th)
+			m3.Update(gtx)
 
 			e.Frame(gtx.Ops)
 		}
