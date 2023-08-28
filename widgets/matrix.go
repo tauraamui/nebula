@@ -47,10 +47,22 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme) layout.Dimens
 	posX := gtx.Dp(unit.Dp(m.Pos.X))
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
 
-	totalSize := f32.Point{}
 	cellSize := f32.Point{X: float32(gtx.Dp(cellWidth)), Y: float32(gtx.Dp(cellHeight))}
 
 	rows, cols := m.Data.Dims()
+	totalSize := f32.Point{
+		X: float32(cols) * cellSize.X,
+		Y: float32(rows) * cellSize.Y,
+	}
+	m.Size = totalSize
+
+	background := image.Rect(posX, posY, posX+gtx.Dp(unit.Dp(m.Size.X))+(m.cellPadding), posY+gtx.Dp(unit.Dp(m.Size.Y))+m.cellPadding)
+	background.Max = background.Max.Add(image.Pt(m.cellPadding*2, m.cellPadding*2))
+	cl := clip.Rect{Min: background.Min, Max: background.Max}.Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{200, 200, 200, 255}}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cl.Pop()
+
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
 			cell := image.Rect(posX+(m.cellWidth*x)+m.cellPadding, posY+(y*m.cellHeight)+m.cellPadding, posX+((m.cellWidth*x)+m.cellWidth), posY+((m.cellHeight*y)+m.cellHeight))
@@ -70,9 +82,6 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme) layout.Dimens
 			cl.Pop()
 		}
 	}
-	totalSize.X = float32(cols) * cellSize.X
-	totalSize.Y = float32(rows) * cellSize.Y
-	m.Size = totalSize
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 

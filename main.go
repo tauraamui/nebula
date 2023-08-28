@@ -42,7 +42,7 @@ func loop(w *app.Window) error {
 
 	m := &widgets.Matrix[float64]{
 		Pos:   f32.Pt(100, 200),
-		Color: color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 255},
+		Color: color.NRGBA{R: 230, G: 230, B: 230, A: 255},
 		Data: mat.NewDense(4, 1, []float64{
 			3,
 			9,
