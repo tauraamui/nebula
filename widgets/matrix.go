@@ -13,6 +13,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/gesturex"
+	nmat "github.com/tauraamui/nebula/mat"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -26,18 +27,19 @@ const (
 	cellPadding         = 1
 )
 
-type Matrix struct {
+type Matrix[T any] struct {
 	Pos,
 	Size f32.Point
 	Color color.NRGBA
 	Data  *mat.Dense
+	Data2 nmat.Matrix[T]
 	cellWidth,
 	cellHeight,
 	cellPadding int
 	drag *gesturex.Drag
 }
 
-func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimensions {
+func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme) layout.Dimensions {
 	m.cellWidth = gtx.Dp(cellWidth)
 	m.cellHeight = gtx.Dp(cellHeight)
 	m.cellPadding = gtx.Dp(cellPadding)
@@ -74,7 +76,7 @@ func (m *Matrix) Layout(gtx layout.Context, th *material.Theme) layout.Dimension
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 
-func (m *Matrix) Update(gtx layout.Context) {
+func (m *Matrix[T]) Update(gtx layout.Context) {
 	if m.drag == nil {
 		m.drag = &gesturex.Drag{}
 	}
