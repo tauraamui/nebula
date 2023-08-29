@@ -89,6 +89,12 @@ func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwi
 	l.Layout(gtx)
 	off.Pop()
 	cl.Pop()
+
+	cl = clip.Stroke{Path: clip.RRect{Rect: cell}.Path(gtx.Ops), Width: 1}.Op().Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{R: 12, G: 12, B: 12, A: 255}}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cl.Pop()
+
 }
 
 func (m *Matrix[T]) Update(gtx layout.Context) {
