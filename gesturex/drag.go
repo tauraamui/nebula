@@ -10,6 +10,7 @@ import (
 
 // Drag detects drag gestures in the form of pointer.Drag events.
 type Drag struct {
+	Tag event.Tag
 	pid pointer.ID
 	ptr pointer.Cursor
 	pressed,
@@ -20,14 +21,14 @@ type Drag struct {
 // Add the handler to the operation list to receive drag events.
 func (d *Drag) Add(ops *op.Ops) {
 	pointer.InputOp{
-		Tag:   d,
-		Types: pointer.Press | pointer.Enter | pointer.Leave | pointer.Drag | pointer.Move | pointer.Release,
+		Tag:   d.Tag,
+		Types: pointer.Press | pointer.Drag | pointer.Move | pointer.Release,
 	}.Add(ops)
 }
 
 // Events returns the next drag events, if any.
 func (d *Drag) Events(cfg unit.Metric, ops *op.Ops, q event.Queue, diffUpdated func(diff f32.Point)) {
-	for _, e := range q.Events(d) {
+	for _, e := range q.Events(d.Tag) {
 		if pe, ok := e.(pointer.Event); ok {
 			d.ptr = d.handlePointerEvent(pe, diffUpdated)
 		}
@@ -41,7 +42,7 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 
 	switch e.Type {
 	case pointer.Press:
-		if !(e.Buttons == pointer.ButtonSecondary || e.Source == pointer.Touch) {
+		if !(e.Buttons == pointer.ButtonPrimary || e.Source == pointer.Touch) {
 			return ptr
 		}
 

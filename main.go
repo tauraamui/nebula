@@ -4,10 +4,12 @@ import (
 	"image/color"
 	"log"
 	"os"
+	"strings"
 
 	"gioui.org/app"
 	"gioui.org/f32"
 	"gioui.org/font/gofont"
+	"gioui.org/io/key"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -40,7 +42,7 @@ func loop(w *app.Window) error {
 		}
 	*/
 
-	m := &widgets.Matrix[float64]{
+	m := widgets.Matrix[float64]{
 		Pos:   f32.Pt(100, 200),
 		Color: color.NRGBA{R: 230, G: 230, B: 230, A: 255},
 		Data: mat.NewDense(4, 1, []float64{
@@ -51,7 +53,7 @@ func loop(w *app.Window) error {
 		}),
 	}
 
-	m2 := &widgets.Matrix[float64]{
+	m2 := widgets.Matrix[float64]{
 		Pos:   f32.Pt(200, 200),
 		Color: color.NRGBA{R: 110, G: 0xff, B: 0xff, A: 255},
 		Data2: nmat.New(4, 3, []float64{
@@ -76,7 +78,7 @@ func loop(w *app.Window) error {
 	}
 
 	c1r, _ := m.Data.Dims()
-	m3 := &widgets.Matrix[float64]{
+	m3 := widgets.Matrix[float64]{
 		Pos:   f32.Pt(460, 200),
 		Color: color.NRGBA{R: 225, G: 110, B: 90, A: 255},
 		Data:  mat.NewDense(c1r, 1, c1),
@@ -85,6 +87,7 @@ func loop(w *app.Window) error {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	var ops op.Ops
+	debug := false
 	for {
 		e := <-w.Events()
 		switch e := e.(type) {
@@ -92,17 +95,31 @@ func loop(w *app.Window) error {
 			return e.Err
 		case system.FrameEvent:
 			ops.Reset()
+
 			gtx := layout.NewContext(&ops, e)
+
+			key.InputOp{
+				Tag: "root",
+			}.Add(gtx.Ops)
+			for _, e := range gtx.Queue.Events("root") {
+				if ke, ok := e.(key.Event); ok {
+					if ke.State == key.Press {
+						if strings.EqualFold(ke.Name, "x") {
+							debug = !debug
+						}
+					}
+				}
+			}
 
 			paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 			paint.PaintOp{}.Add(gtx.Ops)
 
-			m.Layout(gtx, th)
-			m.Update(gtx)
-			m2.Layout(gtx, th)
-			m2.Update(gtx)
-			m3.Layout(gtx, th)
-			m3.Update(gtx)
+			m.Layout(gtx, th, debug)
+			m.Update(gtx, debug)
+			m2.Layout(gtx, th, debug)
+			m2.Update(gtx, debug)
+			m3.Layout(gtx, th, debug)
+			m3.Update(gtx, debug)
 
 			e.Frame(gtx.Ops)
 		}
