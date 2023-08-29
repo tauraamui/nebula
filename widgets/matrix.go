@@ -56,33 +56,39 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme) layout.Dimens
 	}
 	m.Size = totalSize
 
-	background := image.Rect(posX, posY, posX+gtx.Dp(unit.Dp(m.Size.X))+(m.cellPadding), posY+gtx.Dp(unit.Dp(m.Size.Y))+m.cellPadding)
-	background.Max = background.Max.Add(image.Pt(m.cellPadding*2, m.cellPadding*2))
-	cl := clip.Rect{Min: background.Min, Max: background.Max}.Push(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{200, 200, 200, 255}}.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	cl.Pop()
+	/*
+		background := image.Rect(posX, posY, posX+gtx.Dp(unit.Dp(m.Size.X))+(m.cellPadding), posY+gtx.Dp(unit.Dp(m.Size.Y))+m.cellPadding)
+		background.Max = background.Max.Add(image.Pt(m.cellPadding*2, m.cellPadding*2))
+		cl := clip.Rect{Min: background.Min, Max: background.Max}.Push(gtx.Ops)
+		paint.ColorOp{Color: color.NRGBA{200, 200, 200, 255}}.Add(gtx.Ops)
+		paint.PaintOp{}.Add(gtx.Ops)
+		cl.Pop()
+	*/
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			cell := image.Rect(posX+(m.cellWidth*x)+m.cellPadding, posY+(y*m.cellHeight)+m.cellPadding, posX+((m.cellWidth*x)+m.cellWidth), posY+((m.cellHeight*y)+m.cellHeight))
-			cell.Min = cell.Min.Add(image.Pt(m.cellPadding, m.cellPadding))
-			cell.Max = cell.Max.Add(image.Pt(m.cellPadding, m.cellPadding))
-			cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
-			paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
-			paint.PaintOp{}.Add(gtx.Ops)
-			cl.Pop()
-
-			cl = clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
-			l := material.Label(th, unit.Sp(23), strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64))
-			l.Color = color.NRGBA{R: 10, G: 10, B: 10, A: 255}
-			off := op.Offset(cell.Min.Add(image.Pt(gtx.Sp(3), 0))).Push(gtx.Ops)
-			l.Layout(gtx)
-			off.Pop()
-			cl.Pop()
+			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, m.cellWidth, m.cellHeight, m.Color, th)
 		}
 	}
 	return layout.Dimensions{Size: m.Size.Round()}
+}
+
+func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA, th *material.Theme) {
+	// render background of cell
+	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
+	cl := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
+	paint.ColorOp{Color: bgcolor}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cl.Pop()
+
+	// render cell content as text label
+	cl = clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
+	l := material.Label(th, unit.Sp(23), content)
+	l.Color = color.NRGBA{R: 10, G: 10, B: 10, A: 255}
+	off := op.Offset(cell.Min.Add(image.Pt(gtx.Sp(3), 0))).Push(gtx.Ops)
+	l.Layout(gtx)
+	off.Pop()
+	cl.Pop()
 }
 
 func (m *Matrix[T]) Update(gtx layout.Context) {
