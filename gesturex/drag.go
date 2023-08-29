@@ -11,6 +11,7 @@ import (
 // Drag detects drag gestures in the form of pointer.Drag events.
 type Drag struct {
 	Tag event.Tag
+	io  pointer.InputOp
 	pid pointer.ID
 	ptr pointer.Cursor
 	pressed,
@@ -20,10 +21,11 @@ type Drag struct {
 
 // Add the handler to the operation list to receive drag events.
 func (d *Drag) Add(ops *op.Ops) {
-	pointer.InputOp{
+	d.io = pointer.InputOp{
 		Tag:   d.Tag,
 		Types: pointer.Press | pointer.Drag | pointer.Move | pointer.Release,
-	}.Add(ops)
+	}
+	d.io.Add(ops)
 }
 
 // Events returns the next drag events, if any.
@@ -54,6 +56,7 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 	case pointer.Drag:
 		d.dragging = d.pressed
 		if d.dragging {
+			d.io.Grab = true
 			ptr = pointer.CursorGrabbing
 			diff := d.start.Sub(e.Position)
 			cb(diff)
@@ -61,6 +64,7 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 		d.start = e.Position
 	case pointer.Release, pointer.Cancel:
 		d.pressed = false
+		d.io.Grab = false
 		ptr = pointer.CursorDefault
 	}
 
