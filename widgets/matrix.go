@@ -56,15 +56,6 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme) layout.Dimens
 	}
 	m.Size = totalSize
 
-	/*
-		background := image.Rect(posX, posY, posX+gtx.Dp(unit.Dp(m.Size.X))+(m.cellPadding), posY+gtx.Dp(unit.Dp(m.Size.Y))+m.cellPadding)
-		background.Max = background.Max.Add(image.Pt(m.cellPadding*2, m.cellPadding*2))
-		cl := clip.Rect{Min: background.Min, Max: background.Max}.Push(gtx.Ops)
-		paint.ColorOp{Color: color.NRGBA{200, 200, 200, 255}}.Add(gtx.Ops)
-		paint.PaintOp{}.Add(gtx.Ops)
-		cl.Pop()
-	*/
-
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
 			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, m.cellWidth, m.cellHeight, m.Color, th)
@@ -108,6 +99,12 @@ func (m *Matrix[T]) Update(gtx layout.Context) {
 	posPt := pos.Round()
 	sizePt := size.Round()
 	ma := image.Rect(posPt.X, posPt.Y, posPt.X+sizePt.X, posPt.Y+sizePt.Y)
+	ma.Min = ma.Min.Sub(image.Pt(10, 10))
+	ma.Max = ma.Max.Add(image.Pt(10, 10))
+	cl := clip.Stroke{Path: clip.RRect{Rect: ma}.Path(gtx.Ops), Width: 3}.Op().Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{R: 120, G: 12, B: 12, A: 255}}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cl.Pop()
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.drag.Add(gtx.Ops)
 
