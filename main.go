@@ -44,7 +44,7 @@ func loop(w *app.Window) error {
 
 	m := widgets.Matrix[float64]{
 		Pos:   f32.Pt(100, 200),
-		Color: color.NRGBA{R: 230, G: 230, B: 230, A: 255},
+		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 		Data: mat.NewDense(4, 1, []float64{
 			3,
 			9,
@@ -55,7 +55,7 @@ func loop(w *app.Window) error {
 
 	m2 := widgets.Matrix[float64]{
 		Pos:   f32.Pt(200, 200),
-		Color: color.NRGBA{R: 110, G: 0xff, B: 0xff, A: 255},
+		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 		Data2: nmat.New(4, 3, []float64{
 			12, 353, 11,
 			87, 258, 93,
@@ -80,7 +80,7 @@ func loop(w *app.Window) error {
 	c1r, _ := m.Data.Dims()
 	m3 := widgets.Matrix[float64]{
 		Pos:   f32.Pt(460, 200),
-		Color: color.NRGBA{R: 225, G: 110, B: 90, A: 255},
+		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 		Data:  mat.NewDense(c1r, 1, c1),
 	}
 

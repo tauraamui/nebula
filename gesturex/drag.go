@@ -44,7 +44,7 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 
 	switch e.Type {
 	case pointer.Press:
-		if !(e.Buttons == pointer.ButtonPrimary || e.Source == pointer.Touch) {
+		if !(e.Buttons == pointer.ButtonSecondary || e.Source == pointer.Touch) {
 			return ptr
 		}
 
