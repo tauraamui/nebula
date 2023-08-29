@@ -16,7 +16,6 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/widget/material"
-	nmat "github.com/tauraamui/nebula/mat"
 	"github.com/tauraamui/nebula/widgets"
 	"gonum.org/v1/gonum/mat"
 )
@@ -56,12 +55,6 @@ func loop(w *app.Window) error {
 	m2 := widgets.Matrix[float64]{
 		Pos:   f32.Pt(200, 200),
 		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
-		Data2: nmat.New(4, 3, []float64{
-			12, 353, 11,
-			87, 258, 93,
-			29, 679, 224,
-			229, 6945, 685,
-		}),
 		Data: mat.NewDense(4, 3, []float64{
 			12, 353, 11,
 			87, 258, 93,
@@ -98,6 +91,9 @@ func loop(w *app.Window) error {
 
 			gtx := layout.NewContext(&ops, e)
 
+			zoomLevelPx := float32(gtx.Dp(1)) * float32(0.9)
+			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
+
 			key.InputOp{
 				Tag: "root",
 			}.Add(gtx.Ops)
@@ -120,6 +116,8 @@ func loop(w *app.Window) error {
 			m2.Update(gtx, debug)
 			m3.Layout(gtx, th, debug)
 			m3.Update(gtx, debug)
+
+			scale.Pop()
 
 			e.Frame(gtx.Ops)
 		}

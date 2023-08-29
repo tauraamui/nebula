@@ -82,7 +82,7 @@ func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwi
 	cl2.Pop()
 
 	// render cell border
-	borderWidth := float32(0.1) * float32(gtx.Dp(1))
+	borderWidth := float32(.25) / float32(gtx.Dp(1))
 	cl3 := clip.Stroke{Path: clip.RRect{Rect: cell}.Path(gtx.Ops), Width: borderWidth}.Op().Push(gtx.Ops)
 	paint.ColorOp{Color: color.NRGBA{R: 55, G: 55, B: 55, A: 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
