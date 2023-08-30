@@ -34,8 +34,7 @@ type Matrix[T any] struct {
 	Data  *mat.Dense
 	Data2 nmat.Matrix[T]
 	cellWidth,
-	cellHeight,
-	cellPadding int
+	cellHeight int
 	drag         *gesturex.Drag
 	selectedCell image.Point
 }
@@ -43,7 +42,6 @@ type Matrix[T any] struct {
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
 	m.cellWidth = gtx.Dp(cellWidth)
 	m.cellHeight = gtx.Dp(cellHeight)
-	m.cellPadding = gtx.Dp(cellPadding)
 
 	posX := gtx.Dp(unit.Dp(m.Pos.X))
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
