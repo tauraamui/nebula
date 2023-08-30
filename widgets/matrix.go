@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strconv"
@@ -35,7 +36,7 @@ type Matrix[T any] struct {
 	Data2 nmat.Matrix[T]
 	cellWidth,
 	cellHeight int
-	drag         *gesturex.Drag
+	inputEvents  *gesturex.InputEvents
 	selectedCell image.Point
 }
 
@@ -104,8 +105,8 @@ func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwi
 }
 
 func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
-	if m.drag == nil {
-		m.drag = &gesturex.Drag{Tag: m}
+	if m.inputEvents == nil {
+		m.inputEvents = &gesturex.InputEvents{Tag: m}
 	}
 
 	pos := f32.Pt(float32(gtx.Dp(unit.Dp(m.Pos.X))), float32(gtx.Dp(unit.Dp(m.Pos.Y))))
@@ -123,11 +124,22 @@ func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 		cl.Pop()
 	}
 	stack := clip.Rect(ma).Push(gtx.Ops)
-	m.drag.Add(gtx.Ops)
+	m.inputEvents.Add(gtx.Ops)
 
-	m.drag.Events(gtx.Metric, gtx.Ops, gtx.Queue, func(diff f32.Point) {
-		scaledDiff := diff.Div(float32(gtx.Dp(1)))
-		m.Pos = m.Pos.Sub(scaledDiff)
-	})
+	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.dragEvents(gtx.Dp))
 	stack.Pop()
+}
+
+func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
+	return func(diff f32.Point) {
+		scaledDiff := diff.Div(float32(dp(1)))
+		fmt.Printf("PRESSED @ %v\n", scaledDiff)
+	}
+}
+
+func (m *Matrix[T]) dragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
+	return func(diff f32.Point) {
+		scaledDiff := diff.Div(float32(dp(1)))
+		m.Pos = m.Pos.Sub(scaledDiff)
+	}
 }

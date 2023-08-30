@@ -8,8 +8,8 @@ import (
 	"gioui.org/unit"
 )
 
-// Drag detects drag gestures in the form of pointer.Drag events.
-type Drag struct {
+// InputEvents detects drag gestures in the form of pointer.InputEvents events.
+type InputEvents struct {
 	Tag event.Tag
 	io  pointer.InputOp
 	pid pointer.ID
@@ -20,7 +20,7 @@ type Drag struct {
 }
 
 // Add the handler to the operation list to receive drag events.
-func (d *Drag) Add(ops *op.Ops) {
+func (d *InputEvents) Add(ops *op.Ops) {
 	d.io = pointer.InputOp{
 		Tag:   d.Tag,
 		Types: pointer.Press | pointer.Drag | pointer.Move | pointer.Release,
@@ -29,21 +29,30 @@ func (d *Drag) Add(ops *op.Ops) {
 }
 
 // Events returns the next drag events, if any.
-func (d *Drag) Events(cfg unit.Metric, ops *op.Ops, q event.Queue, diffUpdated func(diff f32.Point)) {
+func (d *InputEvents) Events(
+	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback func(pos f32.Point), dragCallback func(diff f32.Point),
+) {
 	for _, e := range q.Events(d.Tag) {
 		if pe, ok := e.(pointer.Event); ok {
-			d.ptr = d.handlePointerEvent(pe, diffUpdated)
+			d.ptr = d.handlePointerEvent(pe, pressCallback, dragCallback)
 		}
 	}
 
 	pointer.Cursor.Add(d.ptr, ops)
 }
 
-func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) pointer.Cursor {
+func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos f32.Point), dragCallback func(diff f32.Point)) pointer.Cursor {
 	ptr := pointer.CursorDefault
 
 	switch e.Type {
 	case pointer.Press:
+		if e.Buttons == pointer.ButtonPrimary {
+			if pressCallback != nil {
+				pressCallback(e.Position)
+			}
+			return ptr
+		}
+
 		if !(e.Buttons == pointer.ButtonSecondary || e.Source == pointer.Touch) {
 			return ptr
 		}
@@ -59,7 +68,9 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 			d.io.Grab = true
 			ptr = pointer.CursorGrabbing
 			diff := d.start.Sub(e.Position)
-			cb(diff)
+			if dragCallback != nil {
+				dragCallback(diff)
+			}
 		}
 		d.start = e.Position
 	case pointer.Release, pointer.Cancel:
@@ -71,8 +82,8 @@ func (d *Drag) handlePointerEvent(e pointer.Event, cb func(diff f32.Point)) poin
 	return ptr
 }
 
-// Dragging reports whether it is currently in use.
-func (d *Drag) Dragging() bool { return d.dragging }
+// InputEventsging reports whether it is currently in use.
+func (d *InputEvents) Dragging() bool { return d.dragging }
 
 // Pressed returns whether a pointer is pressing.
-func (d *Drag) Pressed() bool { return d.pressed }
+func (d *InputEvents) Pressed() bool { return d.pressed }
