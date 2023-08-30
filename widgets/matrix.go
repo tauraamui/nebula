@@ -1,9 +1,9 @@
 package widgets
 
 import (
-	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"strconv"
 
 	"gioui.org/f32"
@@ -55,7 +55,6 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 		Y: float32(rows) * cellSize.Y,
 	}
 	m.Size = totalSize
-	m.selectedCell = image.Pt(0, 0)
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
@@ -131,9 +130,14 @@ func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 }
 
 func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
-	return func(diff f32.Point) {
-		scaledDiff := diff.Div(float32(dp(1)))
-		fmt.Printf("PRESSED @ %v\n", scaledDiff)
+	return func(pos f32.Point) {
+		// make press postion relative to this matrix
+		pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
+		scaledDiff := pos.Div(float32(dp(1)))
+		cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellWidth))
+		celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
+		m.selectedCell.X = int(cellx)
+		m.selectedCell.Y = int(celly)
 	}
 }
 
