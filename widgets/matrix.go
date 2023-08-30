@@ -36,7 +36,8 @@ type Matrix[T any] struct {
 	cellWidth,
 	cellHeight,
 	cellPadding int
-	drag *gesturex.Drag
+	drag         *gesturex.Drag
+	selectedCell image.Point
 }
 
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
@@ -55,13 +56,27 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 		Y: float32(rows) * cellSize.Y,
 	}
 	m.Size = totalSize
+	m.selectedCell = image.Pt(0, 0)
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
 			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, m.cellWidth, m.cellHeight, m.Color, th)
 		}
 	}
+	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, m.cellWidth, m.cellHeight)
+
 	return layout.Dimensions{Size: m.Size.Round()}
+}
+
+func renderCellSelection(gtx layout.Context, x, y int, posx, posy, cellwidth, cellheight int) {
+	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
+	// render cell border
+	borderWidth := 2 * float32(gtx.Dp(1))
+	borderColor := color.NRGBA{R: 230, G: 90, B: 90, A: 255}
+	cl3 := clip.Stroke{Path: clip.RRect{Rect: cell}.Path(gtx.Ops), Width: borderWidth}.Op().Push(gtx.Ops)
+	paint.ColorOp{Color: borderColor}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cl3.Pop()
 }
 
 func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA, th *material.Theme) {
@@ -83,11 +98,11 @@ func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwi
 
 	// render cell border
 	borderWidth := float32(.25) / float32(gtx.Dp(1))
+	borderColor := color.NRGBA{R: 55, G: 55, B: 55, A: 255}
 	cl3 := clip.Stroke{Path: clip.RRect{Rect: cell}.Path(gtx.Ops), Width: borderWidth}.Op().Push(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{R: 55, G: 55, B: 55, A: 255}}.Add(gtx.Ops)
+	paint.ColorOp{Color: borderColor}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	cl3.Pop()
-
 }
 
 func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
