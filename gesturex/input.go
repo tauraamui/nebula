@@ -30,18 +30,18 @@ func (d *InputEvents) Add(ops *op.Ops) {
 
 // Events returns the next drag events, if any.
 func (d *InputEvents) Events(
-	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback func(pos f32.Point), dragCallback func(diff f32.Point),
+	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback func(pos f32.Point), primaryDragCallback, secondaryDragCallback func(diff f32.Point),
 ) {
 	for _, e := range q.Events(d.Tag) {
 		if pe, ok := e.(pointer.Event); ok {
-			d.ptr = d.handlePointerEvent(pe, pressCallback, dragCallback)
+			d.ptr = d.handlePointerEvent(pe, pressCallback, primaryDragCallback, secondaryDragCallback)
 		}
 	}
 
 	pointer.Cursor.Add(d.ptr, ops)
 }
 
-func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos f32.Point), dragCallback func(diff f32.Point)) pointer.Cursor {
+func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos f32.Point), primaryDragCallback, secondaryDragCallback func(diff f32.Point)) pointer.Cursor {
 	ptr := pointer.CursorDefault
 
 	switch e.Type {
@@ -50,15 +50,12 @@ func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos
 			if pressCallback != nil {
 				pressCallback(e.Position)
 			}
-			return ptr
-		}
-
-		if !(e.Buttons == pointer.ButtonSecondary || e.Source == pointer.Touch) {
-			return ptr
+			ptr = pointer.CursorDefault
+		} else {
+			ptr = pointer.CursorGrabbing
 		}
 
 		d.pressed = true
-		ptr = pointer.CursorGrabbing
 		d.start = e.Position
 	case pointer.Move:
 		d.start = e.Position
@@ -68,8 +65,16 @@ func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos
 			d.io.Grab = true
 			ptr = pointer.CursorGrabbing
 			diff := d.start.Sub(e.Position)
-			if dragCallback != nil {
-				dragCallback(diff)
+			if e.Buttons == pointer.ButtonPrimary {
+				if primaryDragCallback != nil {
+					primaryDragCallback(diff)
+					ptr = pointer.CursorDefault
+				}
+			} else if e.Buttons == pointer.ButtonSecondary {
+				if secondaryDragCallback != nil {
+					secondaryDragCallback(diff)
+					ptr = pointer.CursorGrabbing
+				}
 			}
 		}
 		d.start = e.Position

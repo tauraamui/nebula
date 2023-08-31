@@ -38,6 +38,7 @@ type Matrix[T any] struct {
 	cellHeight int
 	inputEvents  *gesturex.InputEvents
 	selectedCell image.Point
+	selection    image.Rectangle
 }
 
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
@@ -126,7 +127,7 @@ func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.inputEvents.Add(gtx.Ops)
 
-	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.dragEvents(gtx.Dp))
+	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
 	stack.Pop()
 }
 
@@ -139,10 +140,20 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
 		celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
 		m.selectedCell.X = int(cellx)
 		m.selectedCell.Y = int(celly)
+		m.selection.Min.X = int(cellx)
+		m.selection.Min.Y = int(celly)
 	}
 }
 
-func (m *Matrix[T]) dragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
+func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
+	return func(diff f32.Point) {
+		/*
+			scaledDiff := diff.Div(float32(dp(1)))
+		*/
+	}
+}
+
+func (m *Matrix[T]) secondaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
 		m.Pos = m.Pos.Sub(scaledDiff)
