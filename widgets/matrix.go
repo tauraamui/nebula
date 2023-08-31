@@ -36,9 +36,9 @@ type Matrix[T any] struct {
 	Data2 nmat.Matrix[T]
 	cellWidth,
 	cellHeight int
-	inputEvents  *gesturex.InputEvents
-	selectedCell image.Point
-	selection    image.Rectangle
+	inputEvents            *gesturex.InputEvents
+	selectedCell           image.Point
+	pendingSelectionBounds image.Rectangle
 }
 
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
@@ -63,6 +63,12 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 		}
 	}
 	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, m.cellWidth, m.cellHeight)
+
+	if debug {
+		if !m.pendingSelectionBounds.Empty() {
+			// TODO:(tauraamui) -> draw shaded rect of some lilac shade or something
+		}
+	}
 
 	return layout.Dimensions{Size: m.Size.Round()}
 }
@@ -140,8 +146,6 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
 		celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
 		m.selectedCell.X = int(cellx)
 		m.selectedCell.Y = int(celly)
-		m.selection.Min.X = int(cellx)
-		m.selection.Min.Y = int(celly)
 	}
 }
 
