@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -46,7 +47,7 @@ type f32Rectangle struct {
 	Min, Max f32.Point
 }
 
-func (r f32Rectangle) Empty() bool {
+func (r *f32Rectangle) Empty() bool {
 	return r.Min.X >= r.Max.X || r.Min.Y >= r.Max.Y
 }
 
@@ -73,13 +74,11 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 	}
 	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, m.cellWidth, m.cellHeight)
 
-	if debug {
-		if !m.pendingSelectionBounds.Empty() {
-			area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
-			clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
-			renderPendingSelectionSpan(gtx, posX, posY, m.pendingSelectionBounds)
-			clip.Pop()
-		}
+	if !m.pendingSelectionBounds.Empty() {
+		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
+		clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
+		renderPendingSelectionSpan(gtx, posX, posY, m.pendingSelectionBounds)
+		clip.Pop()
 	}
 
 	return layout.Dimensions{Size: m.Size.Round()}
@@ -153,7 +152,7 @@ func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.inputEvents.Add(gtx.Ops)
 
-	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
+	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.releaseEvents(gtx.Dp), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
 	stack.Pop()
 }
 
@@ -170,6 +169,17 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, butt
 		m.pendingSelectionBounds = f32Rectangle{Min: f32.Pt(pos.X, pos.Y)}
 		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos)
 		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
+	}
+}
+
+func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
+	return func(pos f32.Point, buttons pointer.Buttons) {
+		if buttons == pointer.ButtonPrimary {
+			if !m.pendingSelectionBounds.Empty() {
+				fmt.Printf("SELECTED AREA: %v\n", m.pendingSelectionBounds)
+				m.pendingSelectionBounds = f32Rectangle{}
+			}
+		}
 	}
 }
 

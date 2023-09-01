@@ -1,6 +1,8 @@
 package gesturex
 
 import (
+	"fmt"
+
 	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
@@ -30,18 +32,23 @@ func (d *InputEvents) Add(ops *op.Ops) {
 
 // Events returns the next drag events, if any.
 func (d *InputEvents) Events(
-	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback func(pos f32.Point, buttons pointer.Buttons), primaryDragCallback, secondaryDragCallback func(diff f32.Point),
+	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback func(pos f32.Point, buttons pointer.Buttons), releaseCallback func(pos f32.Point, buttons pointer.Buttons), primaryDragCallback, secondaryDragCallback func(diff f32.Point),
 ) {
 	for _, e := range q.Events(d.Tag) {
 		if pe, ok := e.(pointer.Event); ok {
-			d.ptr = d.handlePointerEvent(pe, pressCallback, primaryDragCallback, secondaryDragCallback)
+			d.ptr = d.handlePointerEvent(pe, pressCallback, releaseCallback, primaryDragCallback, secondaryDragCallback)
 		}
 	}
 
 	pointer.Cursor.Add(d.ptr, ops)
 }
 
-func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos f32.Point, buttons pointer.Buttons), primaryDragCallback, secondaryDragCallback func(diff f32.Point)) pointer.Cursor {
+func (d *InputEvents) handlePointerEvent(
+	e pointer.Event,
+	pressCallback func(pos f32.Point, buttons pointer.Buttons),
+	releaseCallback func(pos f32.Point, buttons pointer.Buttons),
+	primaryDragCallback, secondaryDragCallback func(diff f32.Point),
+) pointer.Cursor {
 	ptr := pointer.CursorDefault
 
 	switch e.Type {
@@ -79,9 +86,13 @@ func (d *InputEvents) handlePointerEvent(e pointer.Event, pressCallback func(pos
 		}
 		d.start = e.Position
 	case pointer.Release, pointer.Cancel:
+		fmt.Printf("%+v\n", e)
 		d.pressed = false
 		d.io.Grab = false
 		ptr = pointer.CursorDefault
+		if releaseCallback != nil {
+			releaseCallback(e.Position, e.Buttons)
+		}
 	}
 
 	return ptr
