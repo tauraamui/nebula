@@ -177,6 +177,7 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, bu
 		if buttons == pointer.ButtonPrimary {
 			if !m.pendingSelectionBounds.Empty() {
 				fmt.Printf("SELECTED AREA: %v\n", m.pendingSelectionBounds)
+				// TODO:(tauraamui) -> take selection bounds, find all cells which overlap, and select them all
 				m.pendingSelectionBounds = f32Rectangle{}
 			}
 		}

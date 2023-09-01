@@ -1,8 +1,6 @@
 package gesturex
 
 import (
-	"fmt"
-
 	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
@@ -18,7 +16,8 @@ type InputEvents struct {
 	ptr pointer.Cursor
 	pressed,
 	dragging bool
-	start f32.Point
+	pressedButtons pointer.Buttons
+	start          f32.Point
 }
 
 // Add the handler to the operation list to receive drag events.
@@ -53,6 +52,7 @@ func (d *InputEvents) handlePointerEvent(
 
 	switch e.Type {
 	case pointer.Press:
+		d.pressedButtons = e.Buttons
 		if e.Buttons == pointer.ButtonPrimary {
 			if pressCallback != nil {
 				pressCallback(e.Position, e.Buttons)
@@ -86,12 +86,11 @@ func (d *InputEvents) handlePointerEvent(
 		}
 		d.start = e.Position
 	case pointer.Release, pointer.Cancel:
-		fmt.Printf("%+v\n", e)
 		d.pressed = false
 		d.io.Grab = false
 		ptr = pointer.CursorDefault
 		if releaseCallback != nil {
-			releaseCallback(e.Position, e.Buttons)
+			releaseCallback(e.Position, d.pressedButtons)
 		}
 	}
 
