@@ -22,7 +22,9 @@ import (
 
 func main() {
 	go func() {
-		w := app.NewWindow()
+		w := app.NewWindow(
+			app.Title("github.com/tauraamui/nebula"),
+		)
 		err := loop(w)
 		if err != nil {
 			log.Fatal(err)
