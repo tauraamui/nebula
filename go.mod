@@ -3,7 +3,7 @@ module github.com/tauraamui/nebula
 go 1.20
 
 require (
-	gioui.org v0.2.0
+	gioui.org v0.3.0
 	gonum.org/v1/gonum v0.14.0
 )
 
@@ -17,5 +17,3 @@ require (
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 )
-
-replace gioui.org => github.com/dominikh/gio v0.0.0-20230829162812-2163619170de
