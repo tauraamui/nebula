@@ -76,15 +76,15 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 	if debug {
 		if !m.pendingSelectionBounds.Empty() {
 			// TODO:(tauraamui) -> draw shaded rect of some lilac shade or something
-			renderPendingSelectionSpan(gtx, m.pendingSelectionBounds)
+			renderPendingSelectionSpan(gtx, posX, posY, m.pendingSelectionBounds)
 		}
 	}
 
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 
-func renderPendingSelectionSpan(gtx layout.Context, span f32Rectangle) {
-	area := image.Rect(gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(span.Max.X)), gtx.Dp(unit.Dp(span.Max.Y)))
+func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32Rectangle) {
+	area := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
 	cl1 := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: color.NRGBA{224, 63, 222, 110}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
@@ -166,6 +166,7 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, butt
 		pos = pos.Div(float32(dp(1)))
 		// wip pending selection implementation
 		m.pendingSelectionBounds = f32Rectangle{Min: f32.Pt(pos.X, pos.Y)}
+		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos)
 		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
 	}
 }
