@@ -75,8 +75,10 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 
 	if debug {
 		if !m.pendingSelectionBounds.Empty() {
-			// TODO:(tauraamui) -> draw shaded rect of some lilac shade or something
+			area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
+			clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
 			renderPendingSelectionSpan(gtx, posX, posY, m.pendingSelectionBounds)
+			clip.Pop()
 		}
 	}
 
@@ -84,11 +86,11 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 }
 
 func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32Rectangle) {
-	area := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
-	cl1 := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
+	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
+	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: color.NRGBA{224, 63, 222, 110}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
-	cl1.Pop()
+	selectionClip.Pop()
 }
 
 func renderCellSelection(gtx layout.Context, x, y int, posx, posy, cellwidth, cellheight int) {
