@@ -1,12 +1,14 @@
 package widgets
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math"
 	"strconv"
 
 	"gioui.org/f32"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -137,8 +139,11 @@ func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 	stack.Pop()
 }
 
-func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
-	return func(pos f32.Point) {
+func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
+	return func(pos f32.Point, buttons pointer.Buttons) {
+		if buttons != pointer.ButtonPrimary {
+			return
+		}
 		// make press postion relative to this matrix
 		pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
 		scaledDiff := pos.Div(float32(dp(1)))
@@ -146,11 +151,15 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
 		celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
 		m.selectedCell.X = int(cellx)
 		m.selectedCell.Y = int(celly)
+
+		// wip pending selection implementation
+		m.pendingSelectionBounds.Min = image.Pt(pos.Round().X, pos.Round().Y)
 	}
 }
 
 func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
+		fmt.Printf("DRAG AREA: %v\n", m.pendingSelectionBounds)
 		/*
 			scaledDiff := diff.Div(float32(dp(1)))
 		*/
