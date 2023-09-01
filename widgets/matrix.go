@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -40,7 +39,15 @@ type Matrix[T any] struct {
 	cellHeight int
 	inputEvents            *gesturex.InputEvents
 	selectedCell           image.Point
-	pendingSelectionBounds image.Rectangle
+	pendingSelectionBounds f32Rectangle
+}
+
+type f32Rectangle struct {
+	Min, Max f32.Point
+}
+
+func (r f32Rectangle) Empty() bool {
+	return r.Min.X >= r.Max.X || r.Min.Y >= r.Max.Y
 }
 
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
@@ -69,10 +76,19 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 	if debug {
 		if !m.pendingSelectionBounds.Empty() {
 			// TODO:(tauraamui) -> draw shaded rect of some lilac shade or something
+			renderPendingSelectionSpan(gtx, m.pendingSelectionBounds)
 		}
 	}
 
 	return layout.Dimensions{Size: m.Size.Round()}
+}
+
+func renderPendingSelectionSpan(gtx layout.Context, span f32Rectangle) {
+	area := image.Rect(gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(span.Max.X)), gtx.Dp(unit.Dp(span.Max.Y)))
+	cl1 := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{224, 63, 222, 110}}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cl1.Pop()
 }
 
 func renderCellSelection(gtx layout.Context, x, y int, posx, posy, cellwidth, cellheight int) {
@@ -144,25 +160,30 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, butt
 		if buttons != pointer.ButtonPrimary {
 			return
 		}
-		// make press postion relative to this matrix
-		pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
-		scaledDiff := pos.Div(float32(dp(1)))
-		cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellWidth))
-		celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
-		m.selectedCell.X = int(cellx)
-		m.selectedCell.Y = int(celly)
 
+		m.makeCellSelection(dp, pos)
+
+		pos = pos.Div(float32(dp(1)))
 		// wip pending selection implementation
-		m.pendingSelectionBounds.Min = image.Pt(pos.Round().X, pos.Round().Y)
+		m.pendingSelectionBounds = f32Rectangle{Min: f32.Pt(pos.X, pos.Y)}
+		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
 	}
+}
+
+func (m *Matrix[T]) makeCellSelection(dp func(v unit.Dp) int, pos f32.Point) {
+	// make press postion relative to this matrix
+	pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
+	scaledDiff := pos.Div(float32(dp(1)))
+	cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellWidth))
+	celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
+	m.selectedCell.X = int(cellx)
+	m.selectedCell.Y = int(celly)
 }
 
 func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
-		fmt.Printf("DRAG AREA: %v\n", m.pendingSelectionBounds)
-		/*
-			scaledDiff := diff.Div(float32(dp(1)))
-		*/
+		scaledDiff := diff.Div(float32(dp(1)))
+		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Max.Sub(scaledDiff)
 	}
 }
 

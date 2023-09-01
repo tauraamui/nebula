@@ -91,7 +91,7 @@ func loop(w *app.Window) error {
 
 			gtx := layout.NewContext(&ops, e)
 
-			zoomLevelPx := float32(gtx.Dp(1)) * float32(0.9)
+			zoomLevelPx := float32(gtx.Dp(1) / 2)
 			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
 
 			key.InputOp{
