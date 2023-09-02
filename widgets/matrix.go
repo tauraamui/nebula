@@ -84,7 +84,11 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
 		}
 	}
-	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
+
+	for _, selectedCell := range m.selectedCells {
+		renderCellSelection(gtx, selectedCell.X, selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
+	}
+	//renderCellSelection(gtx, selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
 
 	if !m.pendingSelectionBounds.Empty() {
 		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
