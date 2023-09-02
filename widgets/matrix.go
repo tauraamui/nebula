@@ -40,7 +40,7 @@ type Matrix[T any] struct {
 	cellSize               f32.Point
 	inputEvents            *gesturex.InputEvents
 	selectedCell           image.Point
-	selectedCells          []image.Point
+	SelectedCells          []image.Point
 	pendingSelectionBounds f32Rectangle
 }
 
@@ -85,7 +85,7 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 		}
 	}
 
-	for _, selectedCell := range m.selectedCells {
+	for _, selectedCell := range m.SelectedCells {
 		renderCellSelection(gtx, selectedCell.X, selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
 	}
 	//renderCellSelection(gtx, selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
@@ -192,10 +192,34 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, bu
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
 			if !m.pendingSelectionBounds.Empty() {
-				m.selectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, m.pendingSelectionBounds)
+				m.SelectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, m.pendingSelectionBounds)
 				m.pendingSelectionBounds = f32Rectangle{}
+				return
+			}
+			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos, m.cellSize, pos)}
+		}
+	}
+}
+
+func in(p f32.Point, r f32Rectangle) bool {
+	return r.Min.X <= p.X && p.X < r.Max.X &&
+		r.Min.Y <= p.Y && p.Y < r.Max.Y
+}
+
+func resolvePressedCell(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSize f32.Point, pressPos f32.Point) image.Point {
+	return func(dp func(v unit.Dp) int, pos, cellSize f32.Point, pressPos f32.Point) image.Point {
+		pressPos = pressPos.Div(float32(dp(1)))
+
+		var x, y float32
+		for x = 0; x < float32(cols); x++ {
+			for y = 0; y < float32(rows); y++ {
+				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
+				if in(pressPos, cell) {
+					return image.Pt(int(x), int(y))
+				}
 			}
 		}
+		return image.Pt(0, 0)
 	}
 }
 
