@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"math"
 	"strconv"
+	"strings"
 
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
@@ -201,14 +202,20 @@ func resolveSelectedCells(rows, cols int) func(dp func(v unit.Dp) int, pos, cell
 
 		selectedCells := []image.Point{}
 		var x, y float32
+		ob := strings.Builder{}
 		for x = 0; x < float32(cols); x++ {
 			for y = 0; y < float32(rows); y++ {
 				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
 				if selection.Overlaps(cell) {
-					fmt.Printf("X: %f, Y: %f overlapped by selection -> %t\n", x, y, selection.Overlaps(cell))
+					fmt.Fprintf(&ob, "X: %f, Y: %f overlapped by selection -> %t\n", x, y, selection.Overlaps(cell))
 					selectedCells = append(selectedCells, image.Pt(int(x), int(y)))
 				}
 			}
+		}
+		if output := ob.String(); len(output) > 0 {
+			fmt.Printf("%s\n", strings.Repeat("=", 40))
+			fmt.Print(output)
+			fmt.Printf("%s\n", strings.Repeat("=", 40))
 		}
 		return selectedCells
 	}
