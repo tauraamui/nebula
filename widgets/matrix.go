@@ -33,13 +33,13 @@ const (
 type Matrix[T any] struct {
 	Pos,
 	Size f32.Point
-	Color color.NRGBA
-	Data  *mat.Dense
-	Data2 nmat.Matrix[T]
-	cellWidth,
-	cellHeight int
+	Color                  color.NRGBA
+	Data                   *mat.Dense
+	Data2                  nmat.Matrix[T]
+	cellSize               f32.Point
 	inputEvents            *gesturex.InputEvents
 	selectedCell           image.Point
+	selectedCells          []image.Point
 	pendingSelectionBounds f32Rectangle
 }
 
@@ -51,9 +51,20 @@ func (r *f32Rectangle) Empty() bool {
 	return r.Min.X >= r.Max.X || r.Min.Y >= r.Max.Y
 }
 
+// Overlaps reports whether r and s have a non-empty intersection.
+func (r *f32Rectangle) Overlaps(s f32Rectangle) bool {
+	return !r.Empty() && !s.Empty() &&
+		r.Min.X < s.Max.X && s.Min.X < r.Max.X &&
+		r.Min.Y < s.Max.Y && s.Min.Y < r.Max.Y
+}
+
+func (r *f32Rectangle) ConvertToPixelspace(dp func(v unit.Dp) int) image.Rectangle {
+	return image.Rect(dp(unit.Dp(r.Min.X)), dp(unit.Dp(r.Min.Y)), dp(unit.Dp(r.Max.X)), dp(unit.Dp(r.Max.Y)))
+}
+
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
-	m.cellWidth = gtx.Dp(cellWidth)
-	m.cellHeight = gtx.Dp(cellHeight)
+	m.cellSize.X = float32(cellWidth)
+	m.cellSize.Y = float32(cellHeight)
 
 	posX := gtx.Dp(unit.Dp(m.Pos.X))
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
@@ -69,10 +80,10 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, m.cellWidth, m.cellHeight, m.Color, th)
+			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
 		}
 	}
-	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, m.cellWidth, m.cellHeight)
+	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
 
 	if !m.pendingSelectionBounds.Empty() {
 		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
@@ -176,11 +187,30 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, bu
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
 			if !m.pendingSelectionBounds.Empty() {
-				fmt.Printf("SELECTED AREA: %v\n", m.pendingSelectionBounds)
-				// TODO:(tauraamui) -> take selection bounds, find all cells which overlap, and select them all
+				m.selectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, m.pendingSelectionBounds)
 				m.pendingSelectionBounds = f32Rectangle{}
 			}
 		}
+	}
+}
+
+func resolveSelectedCells(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32Rectangle) []image.Point {
+	return func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32Rectangle) []image.Point {
+		selection.Min = selection.Min.Add(pos)
+		selection.Max = selection.Max.Add(pos)
+
+		selectedCells := []image.Point{}
+		var x, y float32
+		for x = 0; x < float32(cols); x++ {
+			for y = 0; y < float32(rows); y++ {
+				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
+				if selection.Overlaps(cell) {
+					fmt.Printf("X: %f, Y: %f overlapped by selection -> %t\n", x, y, selection.Overlaps(cell))
+					selectedCells = append(selectedCells, image.Pt(int(x), int(y)))
+				}
+			}
+		}
+		return selectedCells
 	}
 }
 
@@ -188,8 +218,8 @@ func (m *Matrix[T]) makeCellSelection(dp func(v unit.Dp) int, pos f32.Point) {
 	// make press postion relative to this matrix
 	pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
 	scaledDiff := pos.Div(float32(dp(1)))
-	cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellWidth))
-	celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
+	cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellSize.X))
+	celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellSize.Y))
 	m.selectedCell.X = int(cellx)
 	m.selectedCell.Y = int(celly)
 }
