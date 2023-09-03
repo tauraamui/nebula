@@ -40,6 +40,7 @@ type Matrix[T any] struct {
 	selectedCell           image.Point
 	SelectedCells          []image.Point
 	pendingSelectionBounds f32Rectangle
+	wasMovingMinLast       bool
 }
 
 type f32Rectangle struct {
@@ -253,22 +254,18 @@ func (m *Matrix[T]) makeCellSelection(dp func(v unit.Dp) int, pos f32.Point) {
 func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
-		if scaledDiff.X < 0 && scaledDiff.Y < 0 {
+		if scaledDiff.X > 0 {
+			m.pendingSelectionBounds.Max.X += scaledDiff.X
+		}
+		if scaledDiff.Y > 0 {
+			m.pendingSelectionBounds.Max.Y += scaledDiff.Y
+		}
+		if scaledDiff.X < 0 {
 			m.pendingSelectionBounds.Min.X += scaledDiff.X
+		}
+		if scaledDiff.Y < 0 {
 			m.pendingSelectionBounds.Min.Y += scaledDiff.Y
-			return
 		}
-		if scaledDiff.X < 0 || scaledDiff.Y < 0 {
-			if scaledDiff.X < 0 {
-				m.pendingSelectionBounds.Min.X += scaledDiff.X
-				m.pendingSelectionBounds.Max.Y += scaledDiff.Y
-			}
-			if scaledDiff.Y < 0 {
-				m.pendingSelectionBounds.Min.Y += scaledDiff.Y
-			}
-			return
-		}
-		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Max.Add(scaledDiff)
 	}
 }
 
