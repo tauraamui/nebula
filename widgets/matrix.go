@@ -47,6 +47,19 @@ type f32Rectangle struct {
 	Min, Max f32.Point
 }
 
+func (r *f32Rectangle) SwappedBounds() f32Rectangle {
+	min, max := r.Min, r.Max
+	if max.X < min.X {
+		max.X = r.Min.X
+		min.X = r.Max.X
+	}
+	if max.Y < min.Y {
+		max.Y = r.Min.Y
+		min.Y = r.Max.Y
+	}
+	return f32Rectangle{Min: min, Max: max}
+}
+
 func (r *f32Rectangle) Empty() bool {
 	return r.Min.X >= r.Max.X || r.Min.Y >= r.Max.Y
 }
@@ -89,10 +102,11 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 	}
 	//renderCellSelection(gtx, selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
 
-	if !m.pendingSelectionBounds.Empty() {
+	selectionBounds := m.pendingSelectionBounds.SwappedBounds()
+	if !selectionBounds.Empty() {
 		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
 		clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
-		renderPendingSelectionSpan(gtx, posX, posY, m.pendingSelectionBounds)
+		renderPendingSelectionSpan(gtx, posX, posY, selectionBounds)
 		clip.Pop()
 	}
 
@@ -190,8 +204,9 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, butt
 func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
-			if !m.pendingSelectionBounds.Empty() {
-				m.SelectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, m.pendingSelectionBounds)
+			selectionArea := m.pendingSelectionBounds.SwappedBounds()
+			if !selectionArea.Empty() {
+				m.SelectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, selectionArea)
 				m.pendingSelectionBounds = f32Rectangle{}
 				return
 			}
@@ -254,18 +269,8 @@ func (m *Matrix[T]) makeCellSelection(dp func(v unit.Dp) int, pos f32.Point) {
 func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
-		if scaledDiff.X > 0 {
-			m.pendingSelectionBounds.Max.X += scaledDiff.X
-		}
-		if scaledDiff.Y > 0 {
-			m.pendingSelectionBounds.Max.Y += scaledDiff.Y
-		}
-		if scaledDiff.X < 0 {
-			m.pendingSelectionBounds.Min.X += scaledDiff.X
-		}
-		if scaledDiff.Y < 0 {
-			m.pendingSelectionBounds.Min.Y += scaledDiff.Y
-		}
+		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Max.Add(scaledDiff)
+
 	}
 }
 
