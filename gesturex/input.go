@@ -71,7 +71,7 @@ func (d *InputEvents) handlePointerEvent(
 		if d.dragging {
 			d.io.Grab = true
 			ptr = pointer.CursorGrabbing
-			diff := d.start.Sub(e.Position)
+			diff := e.Position.Sub(d.start)
 			if e.Buttons == pointer.ButtonPrimary {
 				if primaryDragCallback != nil {
 					primaryDragCallback(diff)

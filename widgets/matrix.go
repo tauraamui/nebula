@@ -262,13 +262,28 @@ func (m *Matrix[T]) makeCellSelection(dp func(v unit.Dp) int, pos f32.Point) {
 func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
-		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Max.Sub(scaledDiff)
+		if scaledDiff.X < 0 && scaledDiff.Y < 0 {
+			m.pendingSelectionBounds.Min.X += scaledDiff.X
+			m.pendingSelectionBounds.Min.Y += scaledDiff.Y
+			return
+		}
+		if scaledDiff.X < 0 || scaledDiff.Y < 0 {
+			if scaledDiff.X < 0 {
+				m.pendingSelectionBounds.Min.X += scaledDiff.X
+				m.pendingSelectionBounds.Max.Y += scaledDiff.Y
+			}
+			if scaledDiff.Y < 0 {
+				m.pendingSelectionBounds.Min.Y += scaledDiff.Y
+			}
+			return
+		}
+		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Max.Add(scaledDiff)
 	}
 }
 
 func (m *Matrix[T]) secondaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
-		m.Pos = m.Pos.Sub(scaledDiff)
+		m.Pos = m.Pos.Add(scaledDiff)
 	}
 }
