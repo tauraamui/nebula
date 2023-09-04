@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"gioui.org/f32"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -31,18 +32,52 @@ const (
 type Matrix[T any] struct {
 	Pos,
 	Size f32.Point
-	Color color.NRGBA
-	Data  *mat.Dense
-	Data2 nmat.Matrix[T]
-	cellWidth,
-	cellHeight int
-	inputEvents  *gesturex.InputEvents
-	selectedCell image.Point
+	Color                  color.NRGBA
+	Data                   *mat.Dense
+	Data2                  nmat.Matrix[T]
+	cellSize               f32.Point
+	inputEvents            *gesturex.InputEvents
+	selectedCell           image.Point
+	SelectedCells          []image.Point
+	pendingSelectionBounds f32Rectangle
+	wasMovingMinLast       bool
+}
+
+type f32Rectangle struct {
+	Min, Max f32.Point
+}
+
+func (r *f32Rectangle) SwappedBounds() f32Rectangle {
+	min, max := r.Min, r.Max
+	if max.X < min.X {
+		max.X = r.Min.X
+		min.X = r.Max.X
+	}
+	if max.Y < min.Y {
+		max.Y = r.Min.Y
+		min.Y = r.Max.Y
+	}
+	return f32Rectangle{Min: min, Max: max}
+}
+
+func (r *f32Rectangle) Empty() bool {
+	return r.Min.X >= r.Max.X || r.Min.Y >= r.Max.Y
+}
+
+// Overlaps reports whether r and s have a non-empty intersection.
+func (r *f32Rectangle) Overlaps(s f32Rectangle) bool {
+	return !r.Empty() && !s.Empty() &&
+		r.Min.X < s.Max.X && s.Min.X < r.Max.X &&
+		r.Min.Y < s.Max.Y && s.Min.Y < r.Max.Y
+}
+
+func (r *f32Rectangle) ConvertToPixelspace(dp func(v unit.Dp) int) image.Rectangle {
+	return image.Rect(dp(unit.Dp(r.Min.X)), dp(unit.Dp(r.Min.Y)), dp(unit.Dp(r.Max.X)), dp(unit.Dp(r.Max.Y)))
 }
 
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
-	m.cellWidth = gtx.Dp(cellWidth)
-	m.cellHeight = gtx.Dp(cellHeight)
+	m.cellSize.X = float32(cellWidth)
+	m.cellSize.Y = float32(cellHeight)
 
 	posX := gtx.Dp(unit.Dp(m.Pos.X))
 	posY := gtx.Dp(unit.Dp(m.Pos.Y))
@@ -58,12 +93,32 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, m.cellWidth, m.cellHeight, m.Color, th)
+			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
 		}
 	}
-	renderCellSelection(gtx, m.selectedCell.X, m.selectedCell.Y, posX, posY, m.cellWidth, m.cellHeight)
+
+	for _, selectedCell := range m.SelectedCells {
+		renderCellSelection(gtx, selectedCell.X, selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
+	}
+	//renderCellSelection(gtx, selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
+
+	selectionBounds := m.pendingSelectionBounds.SwappedBounds()
+	if !selectionBounds.Empty() {
+		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
+		clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
+		renderPendingSelectionSpan(gtx, posX, posY, selectionBounds)
+		clip.Pop()
+	}
 
 	return layout.Dimensions{Size: m.Size.Round()}
+}
+
+func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32Rectangle) {
+	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
+	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{224, 63, 222, 110}}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	selectionClip.Pop()
 }
 
 func renderCellSelection(gtx layout.Context, x, y int, posx, posy, cellwidth, cellheight int) {
@@ -126,25 +181,102 @@ func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.inputEvents.Add(gtx.Ops)
 
-	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.dragEvents(gtx.Dp))
+	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.releaseEvents(gtx.Dp), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
 	stack.Pop()
 }
 
-func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point) {
-	return func(pos f32.Point) {
-		// make press postion relative to this matrix
-		pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
-		scaledDiff := pos.Div(float32(dp(1)))
-		cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellWidth))
-		celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellHeight))
-		m.selectedCell.X = int(cellx)
-		m.selectedCell.Y = int(celly)
+func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
+	return func(pos f32.Point, buttons pointer.Buttons) {
+		if buttons != pointer.ButtonPrimary {
+			return
+		}
+
+		m.makeCellSelection(dp, pos)
+
+		pos = pos.Div(float32(dp(1)))
+		// wip pending selection implementation
+		m.pendingSelectionBounds = f32Rectangle{Min: f32.Pt(pos.X, pos.Y)}
+		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos)
+		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
 	}
 }
 
-func (m *Matrix[T]) dragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
+func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
+	return func(pos f32.Point, buttons pointer.Buttons) {
+		if buttons == pointer.ButtonPrimary {
+			selectionArea := m.pendingSelectionBounds.SwappedBounds()
+			if !selectionArea.Empty() {
+				m.SelectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, selectionArea)
+				m.pendingSelectionBounds = f32Rectangle{}
+				return
+			}
+			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos, m.cellSize, pos)}
+		}
+	}
+}
+
+func in(p f32.Point, r f32Rectangle) bool {
+	return r.Min.X <= p.X && p.X < r.Max.X &&
+		r.Min.Y <= p.Y && p.Y < r.Max.Y
+}
+
+func resolvePressedCell(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSize f32.Point, pressPos f32.Point) image.Point {
+	return func(dp func(v unit.Dp) int, pos, cellSize f32.Point, pressPos f32.Point) image.Point {
+		pressPos = pressPos.Div(float32(dp(1)))
+
+		var x, y float32
+		for x = 0; x < float32(cols); x++ {
+			for y = 0; y < float32(rows); y++ {
+				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
+				if in(pressPos, cell) {
+					return image.Pt(int(x), int(y))
+				}
+			}
+		}
+		return image.Pt(0, 0)
+	}
+}
+
+func resolveSelectedCells(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32Rectangle) []image.Point {
+	return func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32Rectangle) []image.Point {
+		selection.Min = selection.Min.Add(pos)
+		selection.Max = selection.Max.Add(pos)
+
+		selectedCells := []image.Point{}
+		var x, y float32
+		for x = 0; x < float32(cols); x++ {
+			for y = 0; y < float32(rows); y++ {
+				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
+				if selection.Overlaps(cell) {
+					selectedCells = append(selectedCells, image.Pt(int(x), int(y)))
+				}
+			}
+		}
+		return selectedCells
+	}
+}
+
+func (m *Matrix[T]) makeCellSelection(dp func(v unit.Dp) int, pos f32.Point) {
+	// make press postion relative to this matrix
+	pos = pos.Sub(f32.Pt(m.Pos.X, m.Pos.Y))
+	scaledDiff := pos.Div(float32(dp(1)))
+	cellx := math.Floor(float64(scaledDiff.X) / float64(m.cellSize.X))
+	celly := math.Floor(float64(scaledDiff.Y) / float64(m.cellSize.Y))
+	m.selectedCell.X = int(cellx)
+	m.selectedCell.Y = int(celly)
+}
+
+func (m *Matrix[T]) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
-		m.Pos = m.Pos.Sub(scaledDiff)
+		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Max.Add(scaledDiff)
+
+	}
+}
+
+func (m *Matrix[T]) secondaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
+	return func(diff f32.Point) {
+		scaledDiff := diff.Div(float32(dp(1)))
+		m.Pos = m.Pos.Add(scaledDiff)
 	}
 }

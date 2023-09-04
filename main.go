@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"log"
 	"os"
@@ -44,8 +45,9 @@ func loop(w *app.Window) error {
 	*/
 
 	m := widgets.Matrix[float64]{
-		Pos:   f32.Pt(100, 200),
-		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
+		Pos:           f32.Pt(100, 200),
+		SelectedCells: []image.Point{image.Pt(0, 0)},
+		Color:         color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 		Data: mat.NewDense(4, 1, []float64{
 			3,
 			9,
@@ -55,8 +57,9 @@ func loop(w *app.Window) error {
 	}
 
 	m2 := widgets.Matrix[float64]{
-		Pos:   f32.Pt(200, 200),
-		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
+		Pos:           f32.Pt(200, 200),
+		SelectedCells: []image.Point{image.Pt(0, 0)},
+		Color:         color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 		Data: mat.NewDense(4, 3, []float64{
 			12, 353, 11,
 			87, 258, 93,
@@ -74,9 +77,10 @@ func loop(w *app.Window) error {
 
 	c1r, _ := m.Data.Dims()
 	m3 := widgets.Matrix[float64]{
-		Pos:   f32.Pt(460, 200),
-		Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
-		Data:  mat.NewDense(c1r, 1, c1),
+		Pos:           f32.Pt(460, 200),
+		SelectedCells: []image.Point{image.Pt(0, 0)},
+		Color:         color.NRGBA{R: 245, G: 245, B: 245, A: 255},
+		Data:          mat.NewDense(c1r, 1, c1),
 	}
 
 	th := material.NewTheme()
@@ -93,7 +97,9 @@ func loop(w *app.Window) error {
 
 			gtx := layout.NewContext(&ops, e)
 
-			zoomLevelPx := float32(gtx.Dp(1)) * float32(0.9)
+			dpScale := gtx.Dp(1)
+			zoomLevelPx := float32(dpScale / dpScale)
+			zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
 			scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
 
 			key.InputOp{
