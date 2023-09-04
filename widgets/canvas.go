@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strings"
@@ -27,6 +28,7 @@ type Canvas struct {
 	matrices               []*Matrix[float64]
 	theme                  *material.Theme
 	input                  *gesturex.InputEvents
+	offset                 f32.Point
 	pendingSelectionBounds f32x.Rectangle
 }
 
@@ -71,7 +73,8 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	dpScale := gtx.Dp(1)
 	zoomLevelPx := float32(dpScale / dpScale)
 	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
-	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
+	fmt.Printf("OFFSET: %v\n", c.offset)
+	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)}).Offset(c.offset)).Push(gtx.Ops)
 
 	paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
@@ -84,7 +87,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	ma := image.Rect(0, 0, e.Size.X, e.Size.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
-	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, c.pressEvents(gtx.Dp), c.releaseEvents(gtx.Dp), c.primaryButtonDragEvents(gtx.Dp), nil)
+	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, c.pressEvents(gtx.Dp), c.releaseEvents(gtx.Dp), c.primaryButtonDragEvents(gtx.Dp), c.secondaryButtonDragEvents(gtx.Dp))
 	stack.Pop()
 
 	th := c.theme
@@ -130,5 +133,12 @@ func (c *Canvas) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.P
 		scaledDiff := diff.Div(float32(dp(1)))
 		c.pendingSelectionBounds.Max = c.pendingSelectionBounds.Max.Add(scaledDiff)
 
+	}
+}
+
+func (c *Canvas) secondaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
+	return func(diff f32.Point) {
+		scaledDiff := diff.Div(float32(dp(1)))
+		c.offset = c.offset.Add(scaledDiff)
 	}
 }
