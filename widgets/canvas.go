@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"strings"
@@ -73,8 +72,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	dpScale := gtx.Dp(1)
 	zoomLevelPx := float32(dpScale / dpScale)
 	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
-	fmt.Printf("OFFSET: %v\n", c.offset)
-	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)}).Offset(c.offset)).Push(gtx.Ops)
+	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
 
 	paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
@@ -92,8 +90,8 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 
 	th := c.theme
 	for _, m := range c.matrices {
-		m.Layout(gtx, th, c.debug)
-		m.Update(gtx, c.debug)
+		m.Layout(gtx, th, c.offset, c.debug)
+		m.Update(gtx, c.offset, c.debug)
 	}
 
 	selectionBounds := c.pendingSelectionBounds.SwappedBounds()
