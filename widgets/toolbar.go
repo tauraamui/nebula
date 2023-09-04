@@ -19,11 +19,11 @@ type Toolbar struct {
 func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
 	posx, posy := t.Pos.Round().X, t.Pos.Round().Y
 	size := t.Size
-	selectionArea := image.Rect(posx, posy, posx+gtx.Dp(unit.Dp(size.X)), posy+gtx.Dp(unit.Dp(size.Y)))
-	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{10, 10, 10, 255}}.Add(gtx.Ops)
+	background := image.Rect(posx, posy, posx+gtx.Dp(unit.Dp(size.X)), posy+gtx.Dp(unit.Dp(size.Y)))
+	bgClip := clip.RRect{Rect: background, NE: 5, SE: 5, SW: 5, NW: 5}.Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{50, 50, 50, 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
-	selectionClip.Pop()
+	bgClip.Pop()
 	return layout.Dimensions{}
 }
 
