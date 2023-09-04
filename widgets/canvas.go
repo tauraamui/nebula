@@ -24,6 +24,7 @@ import (
 
 type Canvas struct {
 	debug                  bool
+	toolbar                Toolbar
 	matrices               []*Matrix[float64]
 	theme                  *material.Theme
 	input                  *gesturex.InputEvents
@@ -36,7 +37,8 @@ func NewCanvas() *Canvas {
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 
 	return &Canvas{
-		theme: th,
+		theme:   th,
+		toolbar: Toolbar{Pos: f32.Pt(10, 10), Size: f32.Pt(400, 40)},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),
@@ -100,6 +102,9 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	}
 
 	scale.Pop()
+
+	c.toolbar.Pos.X = float32(e.Size.X)/2 - c.toolbar.Size.X/2
+	c.toolbar.Layout(gtx, th, c.debug)
 }
 
 func (c *Canvas) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
