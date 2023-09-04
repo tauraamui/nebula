@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -111,7 +110,6 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 		clip.Pop()
 	}
 
-	fmt.Println(m.Size)
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 

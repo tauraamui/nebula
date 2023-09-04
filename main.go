@@ -5,17 +5,13 @@ import (
 	"os"
 
 	"gioui.org/app"
-	"github.com/tauraamui/nebula/widgets"
+	"github.com/tauraamui/nebula/nebula"
 )
 
 func main() {
-	canvas := widgets.Canvas{}
+	appx := nebula.New()
 	go func() {
-		w := app.NewWindow(
-			app.Title("github.com/tauraamui/nebula"),
-		)
-		err := canvas.Run(w)
-		if err != nil {
+		if err := appx.Run(); err != nil {
 			log.Fatal(err)
 		}
 		os.Exit(0)
