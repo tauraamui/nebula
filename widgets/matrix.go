@@ -14,6 +14,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
+	"github.com/tauraamui/nebula/f32x"
 	"github.com/tauraamui/nebula/gesturex"
 	nmat "github.com/tauraamui/nebula/mat"
 	"gonum.org/v1/gonum/mat"
@@ -39,40 +40,8 @@ type Matrix[T any] struct {
 	inputEvents            *gesturex.InputEvents
 	selectedCell           image.Point
 	SelectedCells          []image.Point
-	pendingSelectionBounds f32Rectangle
+	pendingSelectionBounds f32x.Rectangle
 	wasMovingMinLast       bool
-}
-
-type f32Rectangle struct {
-	Min, Max f32.Point
-}
-
-func (r *f32Rectangle) SwappedBounds() f32Rectangle {
-	min, max := r.Min, r.Max
-	if max.X < min.X {
-		max.X = r.Min.X
-		min.X = r.Max.X
-	}
-	if max.Y < min.Y {
-		max.Y = r.Min.Y
-		min.Y = r.Max.Y
-	}
-	return f32Rectangle{Min: min, Max: max}
-}
-
-func (r *f32Rectangle) Empty() bool {
-	return r.Min.X >= r.Max.X || r.Min.Y >= r.Max.Y
-}
-
-// Overlaps reports whether r and s have a non-empty intersection.
-func (r *f32Rectangle) Overlaps(s f32Rectangle) bool {
-	return !r.Empty() && !s.Empty() &&
-		r.Min.X < s.Max.X && s.Min.X < r.Max.X &&
-		r.Min.Y < s.Max.Y && s.Min.Y < r.Max.Y
-}
-
-func (r *f32Rectangle) ConvertToPixelspace(dp func(v unit.Dp) int) image.Rectangle {
-	return image.Rect(dp(unit.Dp(r.Min.X)), dp(unit.Dp(r.Min.Y)), dp(unit.Dp(r.Max.X)), dp(unit.Dp(r.Max.Y)))
 }
 
 func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) layout.Dimensions {
@@ -106,17 +75,17 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, debug bool) l
 	if !selectionBounds.Empty() {
 		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
 		clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
-		renderPendingSelectionSpan(gtx, posX, posY, selectionBounds)
+		renderPendingSelectionSpan(gtx, posX, posY, selectionBounds, color.NRGBA{224, 63, 222, 110})
 		clip.Pop()
 	}
 
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 
-func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32Rectangle) {
+func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32x.Rectangle, color color.NRGBA) {
 	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
 	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{224, 63, 222, 110}}.Add(gtx.Ops)
+	paint.ColorOp{Color: color}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	selectionClip.Pop()
 }
@@ -195,7 +164,7 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, butt
 
 		pos = pos.Div(float32(dp(1)))
 		// wip pending selection implementation
-		m.pendingSelectionBounds = f32Rectangle{Min: f32.Pt(pos.X, pos.Y)}
+		m.pendingSelectionBounds = f32x.Rectangle{Min: f32.Pt(pos.X, pos.Y)}
 		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos)
 		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
 	}
@@ -207,7 +176,7 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, bu
 			selectionArea := m.pendingSelectionBounds.SwappedBounds()
 			if !selectionArea.Empty() {
 				m.SelectedCells = resolveSelectedCells(m.Data.Dims())(dp, m.Pos, m.cellSize, selectionArea)
-				m.pendingSelectionBounds = f32Rectangle{}
+				m.pendingSelectionBounds = f32x.Rectangle{}
 				return
 			}
 			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos, m.cellSize, pos)}
@@ -215,7 +184,7 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, bu
 	}
 }
 
-func in(p f32.Point, r f32Rectangle) bool {
+func in(p f32.Point, r f32x.Rectangle) bool {
 	return r.Min.X <= p.X && p.X < r.Max.X &&
 		r.Min.Y <= p.Y && p.Y < r.Max.Y
 }
@@ -227,7 +196,7 @@ func resolvePressedCell(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSi
 		var x, y float32
 		for x = 0; x < float32(cols); x++ {
 			for y = 0; y < float32(rows); y++ {
-				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
+				cell := f32x.Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
 				if in(pressPos, cell) {
 					return image.Pt(int(x), int(y))
 				}
@@ -237,8 +206,8 @@ func resolvePressedCell(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSi
 	}
 }
 
-func resolveSelectedCells(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32Rectangle) []image.Point {
-	return func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32Rectangle) []image.Point {
+func resolveSelectedCells(rows, cols int) func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32x.Rectangle) []image.Point {
+	return func(dp func(v unit.Dp) int, pos, cellSize f32.Point, selection f32x.Rectangle) []image.Point {
 		selection.Min = selection.Min.Add(pos)
 		selection.Max = selection.Max.Add(pos)
 
@@ -246,7 +215,7 @@ func resolveSelectedCells(rows, cols int) func(dp func(v unit.Dp) int, pos, cell
 		var x, y float32
 		for x = 0; x < float32(cols); x++ {
 			for y = 0; y < float32(rows); y++ {
-				cell := f32Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
+				cell := f32x.Rectangle{Min: f32.Pt(pos.X+(cellSize.X*x), pos.Y+(cellSize.Y*y)), Max: f32.Pt(pos.X+((cellSize.X*x)+cellSize.X), pos.Y+((cellSize.Y*y)+cellSize.Y))}
 				if selection.Overlaps(cell) {
 					selectedCells = append(selectedCells, image.Pt(int(x), int(y)))
 				}
