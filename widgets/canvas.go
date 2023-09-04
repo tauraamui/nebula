@@ -38,7 +38,7 @@ func NewCanvas() *Canvas {
 
 	return &Canvas{
 		theme:   th,
-		toolbar: Toolbar{Pos: f32.Pt(10, 10), Size: f32.Pt(400, 40)},
+		toolbar: Toolbar{Pos: f32.Pt(10, 10), Size: f32.Pt(400, 55)},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),
@@ -104,6 +104,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	scale.Pop()
 
 	c.toolbar.Pos.X = float32(e.Size.X)/2 - c.toolbar.Size.X/2
+	c.toolbar.Size.X = float32(e.Size.X) * .4
 	c.toolbar.Layout(gtx, th, c.debug)
 }
 
