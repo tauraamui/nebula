@@ -3,6 +3,7 @@ package widgets
 import (
 	"image"
 	"image/color"
+	"log"
 	"strings"
 
 	"gioui.org/f32"
@@ -19,6 +20,7 @@ import (
 	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/f32x"
 	"github.com/tauraamui/nebula/gesturex"
+	"github.com/tauraamui/nebula/icons"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -36,9 +38,14 @@ func NewCanvas() *Canvas {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 
+	pointerIcon, err := icons.MousePointer()
+	if err != nil {
+		log.Fatalf("unable to load mouse pointer icon: %v", err)
+	}
+
 	return &Canvas{
 		theme:   th,
-		toolbar: Toolbar{Pos: f32.Pt(10, 10), Size: f32.Pt(400, 55)},
+		toolbar: Toolbar{Pos: f32.Pt(10, 10), Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),
