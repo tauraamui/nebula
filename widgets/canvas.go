@@ -104,7 +104,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	scale.Pop()
 
 	c.toolbar.Pos.X = float32(e.Size.X)/2 - c.toolbar.Size.X/2
-	c.toolbar.Size.X = float32(e.Size.X) * .4
+	//c.toolbar.Size.X = float32(e.Size.X) * .4
 	c.toolbar.Layout(gtx, th, c.debug)
 }
 
