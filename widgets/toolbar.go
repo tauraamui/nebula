@@ -12,6 +12,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/inkeliz/giosvg"
+	"github.com/tauraamui/nebula/gesturex"
 	"github.com/tauraamui/nebula/icons"
 )
 
@@ -51,6 +52,7 @@ func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) lay
 			btnoff = op.Offset(image.Pt(gtx.Dp(unit.Dp((5+btn.size.X)))*i, 0)).Push(gtx.Ops)
 		}
 		btn.Layout(gtx, t.Size.Y, i == t.active)
+		btn.Update(i, gtx, debug, i == t.active, t.buttonClicked(i))
 		if i > 0 {
 			btnoff.Pop()
 		}
@@ -62,10 +64,18 @@ func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) lay
 	return layout.Dimensions{}
 }
 
+func (t *Toolbar) buttonClicked(index int) func() {
+	return func() {
+		t.active = index
+	}
+}
+
 type toolButton struct {
-	size    f32.Point
-	rounded int
-	icon    *giosvg.Icon
+	size         f32.Point
+	rounded      int
+	icon         *giosvg.Icon
+	inputEvents  *gesturex.ButtonEvents
+	beingPressed bool
 }
 
 func (b *toolButton) Layout(gtx layout.Context, barHeight float32, active bool) layout.Dimensions {
@@ -92,6 +102,29 @@ func (b *toolButton) Layout(gtx layout.Context, barHeight float32, active bool) 
 	}
 
 	return layout.Dimensions{}
+}
+
+func (b *toolButton) Update(index int, gtx layout.Context, debug, active bool, clicked func()) {
+	if b.inputEvents == nil {
+		b.inputEvents = &gesturex.ButtonEvents{Tag: b}
+	}
+
+	if active {
+		return
+	}
+
+	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(30)) - gtx.Dp(10)))
+	stack := clip.Rect(btn).Push(gtx.Ops)
+	b.inputEvents.Add(gtx.Ops)
+	b.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, func() {
+		b.beingPressed = true
+	}, func() {
+		b.beingPressed = false
+		if !active {
+			clicked()
+		}
+	})
+	stack.Pop()
 }
 
 func makeButton(icon icons.IconResolver) (*toolButton, error) {
