@@ -26,7 +26,7 @@ import (
 
 type Canvas struct {
 	debug                  bool
-	toolbar                Toolbar
+	toolbar                *Toolbar
 	matrices               []*Matrix[float64]
 	theme                  *material.Theme
 	input                  *gesturex.InputEvents
@@ -38,6 +38,10 @@ func NewCanvas() *Canvas {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 
+	tlbar, err := NewToolbar(f32.Pt(300, 40))
+	if err != nil {
+		log.Fatalf("unable to load toolbar: %v\n", err)
+	}
 	pointerIcon, err := icons.MousePointer()
 	if err != nil {
 		log.Fatalf("unable to load mouse pointer icon: %v", err)
@@ -45,7 +49,8 @@ func NewCanvas() *Canvas {
 
 	return &Canvas{
 		theme:   th,
-		toolbar: Toolbar{Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
+		toolbar: tlbar,
+		//toolbar: Toolbar{Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),

@@ -9,6 +9,8 @@ import (
 //go:embed  mouse-pointer.svg
 var mousePointer []byte
 
+type IconResolver func() (*giosvg.Icon, error)
+
 func MousePointer() (*giosvg.Icon, error) {
 	vec, err := giosvg.NewVector(mousePointer)
 	if err != nil {
