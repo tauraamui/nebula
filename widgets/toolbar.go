@@ -71,11 +71,11 @@ func (t *Toolbar) buttonClicked(index int) func() {
 }
 
 type toolButton struct {
-	size         f32.Point
-	rounded      int
-	icon         *giosvg.Icon
-	inputEvents  *gesturex.ButtonEvents
-	beingPressed bool
+	inactiveIcon, activeIcon *giosvg.Icon
+	size                     f32.Point
+	rounded                  int
+	inputEvents              *gesturex.ButtonEvents
+	beingPressed             bool
 }
 
 func (b *toolButton) Layout(gtx layout.Context, barHeight float32, active bool) layout.Dimensions {
@@ -95,22 +95,30 @@ func (b *toolButton) Layout(gtx layout.Context, barHeight float32, active bool) 
 		paint.ColorOp{Color: color.NRGBA{172, 155, 238, 255}}.Add(gtx.Ops)
 		paint.PaintOp{}.Add(gtx.Ops)
 		cl.Pop()
-	}
 
-	if b.icon != nil {
-		iconOff := op.Offset(image.Pt(gtx.Dp(7), gtx.Dp(7))).Push(gtx.Ops)
-		gtx.Constraints.Min = image.Pt(gtx.Dp(10), gtx.Dp(10))
-		gtx.Constraints.Max = image.Pt(gtx.Dp(100), gtx.Dp(16))
-		iconcolor := color.NRGBA{255, 255, 255, 255}
-		if active {
-			iconcolor = color.NRGBA{82, 29, 228, 255}
+		if b.activeIcon != nil {
+			drawIcon(gtx, b.activeIcon, active)
 		}
-		paint.ColorOp{Color: iconcolor}.Add(gtx.Ops)
-		b.icon.Layout(gtx)
-		iconOff.Pop()
+	} else {
+		if b.inactiveIcon != nil {
+			drawIcon(gtx, b.inactiveIcon, active)
+		}
 	}
 
 	return layout.Dimensions{}
+}
+
+func drawIcon(gtx layout.Context, ic *giosvg.Icon, active bool) {
+	iconOff := op.Offset(image.Pt(gtx.Dp(7), gtx.Dp(7))).Push(gtx.Ops)
+	gtx.Constraints.Min = image.Pt(gtx.Dp(10), gtx.Dp(10))
+	gtx.Constraints.Max = image.Pt(gtx.Dp(100), gtx.Dp(16))
+	iconcolor := color.NRGBA{255, 255, 255, 255}
+	if active {
+		iconcolor = color.NRGBA{82, 29, 228, 255}
+	}
+	paint.ColorOp{Color: iconcolor}.Add(gtx.Ops)
+	ic.Layout(gtx)
+	iconOff.Pop()
 }
 
 func (b *toolButton) Update(index int, gtx layout.Context, debug, active bool, clicked func()) {
@@ -138,23 +146,28 @@ func (b *toolButton) Update(index int, gtx layout.Context, debug, active bool, c
 	stack.Pop()
 }
 
-func makeButton(icon icons.IconResolver) (*toolButton, error) {
-	ic, err := icon()
+func makeButton(inactiveIcon, activeIcon icons.IconResolver) (*toolButton, error) {
+	inactive, err := inactiveIcon()
 	if err != nil {
 		return nil, err
 	}
-	return &toolButton{size: f32.Pt(30, 0), icon: ic, rounded: 10}, nil
+
+	active, err := activeIcon()
+	if err != nil {
+		return nil, err
+	}
+	return &toolButton{size: f32.Pt(30, 0), inactiveIcon: inactive, activeIcon: active, rounded: 10}, nil
 }
 
 func makeAllButtons() ([]*toolButton, error) {
 	btns := []*toolButton{}
 
-	pointAndSelect, err := makeButton(icons.MousePointer)
+	pointAndSelect, err := makeButton(icons.MousePointer, icons.MousePointer)
 	if err != nil {
 		return nil, err
 	}
 
-	drawNewMatrix, err := makeButton(icons.Square)
+	drawNewMatrix, err := makeButton(icons.SquareBorder, icons.Square)
 	if err != nil {
 		return nil, err
 	}

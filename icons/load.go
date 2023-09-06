@@ -12,6 +12,9 @@ var mousePointer []byte
 //go:embed  square.svg
 var square []byte
 
+//go:embed  square-border.svg
+var squareBorder []byte
+
 type IconResolver func() (*giosvg.Icon, error)
 
 func MousePointer() (*giosvg.Icon, error) {
@@ -20,6 +23,10 @@ func MousePointer() (*giosvg.Icon, error) {
 
 func Square() (*giosvg.Icon, error) {
 	return makeIcon(square)
+}
+
+func SquareBorder() (*giosvg.Icon, error) {
+	return makeIcon(squareBorder)
 }
 
 func makeIcon(b []byte) (*giosvg.Icon, error) {

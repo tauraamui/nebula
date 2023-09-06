@@ -45,7 +45,6 @@ func NewCanvas() *Canvas {
 	return &Canvas{
 		theme:   th,
 		toolbar: tlbar,
-		//toolbar: Toolbar{Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),
