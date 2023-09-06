@@ -20,7 +20,6 @@ import (
 	"gioui.org/widget/material"
 	"github.com/tauraamui/nebula/f32x"
 	"github.com/tauraamui/nebula/gesturex"
-	"github.com/tauraamui/nebula/icons"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -41,10 +40,6 @@ func NewCanvas() *Canvas {
 	tlbar, err := NewToolbar(f32.Pt(300, 40))
 	if err != nil {
 		log.Fatalf("unable to load toolbar: %v\n", err)
-	}
-	pointerIcon, err := icons.MousePointer()
-	if err != nil {
-		log.Fatalf("unable to load mouse pointer icon: %v", err)
 	}
 
 	return &Canvas{

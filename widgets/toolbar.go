@@ -48,6 +48,16 @@ func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) lay
 	paint.PaintOp{}.Add(gtx.Ops)
 
 	off := op.Offset(image.Pt(gtx.Dp(5), gtx.Dp(5))).Push(gtx.Ops)
+	for i, btn := range t.btns {
+		var btnoff op.TransformStack
+		if i > 0 {
+			btnoff = op.Offset(image.Pt(gtx.Dp(unit.Dp(5+btn.size.X)), 0)).Push(gtx.Ops)
+		}
+		btn.Layout(gtx, t.Size.Y)
+		if i > 0 {
+			btnoff.Pop()
+		}
+	}
 	off.Pop()
 
 	bgClip.Pop()
@@ -61,8 +71,8 @@ type toolButton struct {
 	icon    *giosvg.Icon
 }
 
-func (b *toolButton) Layout(gtx layout.Context) layout.Dimensions {
-	btn := image.Rect(0, 0, gtx.Dp(30), (gtx.Dp(unit.Dp(b.size.Y)) - gtx.Dp(10)))
+func (b *toolButton) Layout(gtx layout.Context, barHeight float32) layout.Dimensions {
+	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(barHeight)) - gtx.Dp(10)))
 	btnClip := clip.RRect{Rect: btn, NE: b.rounded, SE: b.rounded, SW: b.rounded, NW: b.rounded}.Push(gtx.Ops)
 	paint.ColorOp{Color: color.NRGBA{110, 50, 180, 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
@@ -85,7 +95,7 @@ func makeButton(icon icons.IconResolver) (*toolButton, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &toolButton{icon: ic}, nil
+	return &toolButton{size: f32.Pt(30, 0), icon: ic, rounded: 8}, nil
 }
 
 func makeAllButtons() ([]*toolButton, error) {
