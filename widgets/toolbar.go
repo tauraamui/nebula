@@ -81,11 +81,20 @@ type toolButton struct {
 func (b *toolButton) Layout(gtx layout.Context, barHeight float32, active bool) layout.Dimensions {
 	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(barHeight)) - gtx.Dp(10)))
 	rounded := gtx.Dp(unit.Dp(b.rounded))
-	if active {
-		btnClip := clip.RRect{Rect: btn, NE: rounded, SE: rounded, SW: rounded, NW: rounded}.Push(gtx.Ops)
+	btnClip := clip.RRect{Rect: btn, NE: rounded, SE: rounded, SW: rounded, NW: rounded}
+
+	if b.beingPressed {
+		cl := clip.Stroke{Path: btnClip.Path(gtx.Ops), Width: 3}.Op().Push(gtx.Ops)
 		paint.ColorOp{Color: color.NRGBA{172, 155, 238, 255}}.Add(gtx.Ops)
 		paint.PaintOp{}.Add(gtx.Ops)
-		btnClip.Pop()
+		cl.Pop()
+	}
+
+	if active {
+		cl := btnClip.Push(gtx.Ops)
+		paint.ColorOp{Color: color.NRGBA{172, 155, 238, 255}}.Add(gtx.Ops)
+		paint.PaintOp{}.Add(gtx.Ops)
+		cl.Pop()
 	}
 
 	if b.icon != nil {
@@ -113,11 +122,13 @@ func (b *toolButton) Update(index int, gtx layout.Context, debug, active bool, c
 		return
 	}
 
-	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(30)) - gtx.Dp(10)))
+	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(30))))
 	stack := clip.Rect(btn).Push(gtx.Ops)
 	b.inputEvents.Add(gtx.Ops)
 	b.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, func() {
 		b.beingPressed = true
+	}, func() {
+		b.beingPressed = false
 	}, func() {
 		b.beingPressed = false
 		if !active {

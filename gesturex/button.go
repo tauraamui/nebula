@@ -13,7 +13,8 @@ type ButtonEvents struct {
 	pid            pointer.ID
 	ptr            pointer.Cursor
 	pressedButtons pointer.Buttons
-	pressed        bool
+	pressed,
+	leftWhilstPressed bool
 }
 
 // Add the handler to the operation list to receive drag events.
@@ -27,11 +28,11 @@ func (d *ButtonEvents) Add(ops *op.Ops) {
 
 // Events returns the next drag events, if any.
 func (d *ButtonEvents) Events(
-	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback, releaseCallback func(),
+	cfg unit.Metric, ops *op.Ops, q event.Queue, pressCallback, leaveWhilePressedCallback, releaseCallback func(),
 ) {
 	for _, e := range q.Events(d.Tag) {
 		if pe, ok := e.(pointer.Event); ok {
-			d.ptr = d.handlePointerEvent(pe, pressCallback, releaseCallback)
+			d.ptr = d.handlePointerEvent(pe, pressCallback, leaveWhilePressedCallback, releaseCallback)
 		}
 	}
 
@@ -41,6 +42,7 @@ func (d *ButtonEvents) Events(
 func (d *ButtonEvents) handlePointerEvent(
 	e pointer.Event,
 	pressCallback func(),
+	leaveWhilePressedCallback func(),
 	releaseCallback func(),
 ) pointer.Cursor {
 	ptr := pointer.CursorDefault
@@ -48,11 +50,18 @@ func (d *ButtonEvents) handlePointerEvent(
 	switch e.Type {
 	case pointer.Enter:
 		ptr = pointer.CursorPointer
+		d.leftWhilstPressed = false
 		break
 	case pointer.Leave:
+		if d.pressed && leaveWhilePressedCallback != nil {
+			leaveWhilePressedCallback()
+			d.pressed = false
+			d.leftWhilstPressed = true
+		}
 		break
 	case pointer.Press:
 		if e.Buttons == pointer.ButtonPrimary {
+			d.pressed = true
 			d.io.Grab = true
 			if pressCallback != nil {
 				pressCallback()
@@ -61,6 +70,9 @@ func (d *ButtonEvents) handlePointerEvent(
 			break
 		}
 	case pointer.Release, pointer.Cancel:
+		if d.leftWhilstPressed {
+			break
+		}
 		d.pressed = false
 		d.io.Grab = false
 		ptr = pointer.CursorDefault
