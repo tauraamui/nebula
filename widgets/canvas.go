@@ -94,7 +94,8 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
 	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, nil, nil, nil, c.secondaryButtonDragEvents(gtx.Dp))
-	c.toolbar.GetActiveTool().Update(gtx)
+	activeTool := c.toolbar.GetActiveTool()
+	activeTool.Update(gtx)
 	stack.Pop()
 
 	th := c.theme
