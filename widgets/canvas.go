@@ -3,6 +3,7 @@ package widgets
 import (
 	"image"
 	"image/color"
+	"log"
 	"strings"
 
 	"gioui.org/f32"
@@ -24,6 +25,7 @@ import (
 
 type Canvas struct {
 	debug                  bool
+	toolbar                *Toolbar
 	matrices               []*Matrix[float64]
 	theme                  *material.Theme
 	input                  *gesturex.InputEvents
@@ -35,8 +37,15 @@ func NewCanvas() *Canvas {
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 
+	tlbar, err := NewToolbar(f32.Pt(300, 40))
+	if err != nil {
+		log.Fatalf("unable to load toolbar: %v\n", err)
+	}
+
 	return &Canvas{
-		theme: th,
+		theme:   th,
+		toolbar: tlbar,
+		//toolbar: Toolbar{Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),
@@ -100,6 +109,10 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	}
 
 	scale.Pop()
+
+	off := op.Offset(image.Pt((e.Size.X/2)-gtx.Dp(unit.Dp(c.toolbar.Size.Round().X))/2, gtx.Dp(10))).Push(gtx.Ops)
+	c.toolbar.Layout(gtx, th, c.debug)
+	off.Pop()
 }
 
 func (c *Canvas) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
