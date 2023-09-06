@@ -45,7 +45,7 @@ func NewCanvas() *Canvas {
 
 	return &Canvas{
 		theme:   th,
-		toolbar: Toolbar{Pos: f32.Pt(10, 10), Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
+		toolbar: Toolbar{Size: f32.Pt(300, 40), MousePointerIcon: pointerIcon},
 		matrices: []*Matrix[float64]{
 			{
 				Pos:           f32.Pt(200, 200),
@@ -110,9 +110,9 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 
 	scale.Pop()
 
-	c.toolbar.Pos.X = float32(e.Size.X)/2 - c.toolbar.Size.X/2
-	//c.toolbar.Size.X = float32(e.Size.X) * .4
+	off := op.Offset(image.Pt((e.Size.X/2)-gtx.Dp(unit.Dp(c.toolbar.Size.Round().X))/2, gtx.Dp(10))).Push(gtx.Ops)
 	c.toolbar.Layout(gtx, th, c.debug)
+	off.Pop()
 }
 
 func (c *Canvas) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
