@@ -44,14 +44,14 @@ func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) lay
 	rounded := gtx.Dp(8)
 	bgClip := clip.RRect{Rect: background, NE: rounded, SE: rounded, SW: rounded, NW: rounded}.Push(gtx.Ops)
 
-	paint.ColorOp{Color: color.NRGBA{50, 50, 50, 255}}.Add(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{7, 7, 7, 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 
 	off := op.Offset(image.Pt(gtx.Dp(5), gtx.Dp(5))).Push(gtx.Ops)
 	for i, btn := range t.btns {
 		var btnoff op.TransformStack
 		if i > 0 {
-			btnoff = op.Offset(image.Pt(gtx.Dp(unit.Dp(5+btn.size.X)), 0)).Push(gtx.Ops)
+			btnoff = op.Offset(image.Pt(gtx.Dp(unit.Dp((5+btn.size.X)))*i, 0)).Push(gtx.Ops)
 		}
 		btn.Layout(gtx, t.Size.Y)
 		if i > 0 {
@@ -73,16 +73,17 @@ type toolButton struct {
 
 func (b *toolButton) Layout(gtx layout.Context, barHeight float32) layout.Dimensions {
 	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(barHeight)) - gtx.Dp(10)))
-	btnClip := clip.RRect{Rect: btn, NE: b.rounded, SE: b.rounded, SW: b.rounded, NW: b.rounded}.Push(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{110, 50, 180, 255}}.Add(gtx.Ops)
+	rounded := gtx.Dp(unit.Dp(b.rounded))
+	btnClip := clip.RRect{Rect: btn, NE: rounded, SE: rounded, SW: rounded, NW: rounded}.Push(gtx.Ops)
+	paint.ColorOp{Color: color.NRGBA{172, 155, 238, 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	btnClip.Pop()
 
 	if b.icon != nil {
-		iconOff := op.Offset(image.Pt(gtx.Dp(7), gtx.Dp(7))).Push(gtx.Ops)
+		iconOff := op.Offset(image.Pt(gtx.Dp(6), gtx.Dp(7))).Push(gtx.Ops)
 		gtx.Constraints.Min = image.Pt(gtx.Dp(10), gtx.Dp(10))
 		gtx.Constraints.Max = image.Pt(gtx.Dp(100), gtx.Dp(16))
-		paint.ColorOp{Color: color.NRGBA{200, 200, 200, 255}}.Add(gtx.Ops)
+		paint.ColorOp{Color: color.NRGBA{82, 29, 228, 255}}.Add(gtx.Ops)
 		b.icon.Layout(gtx)
 		iconOff.Pop()
 	}
@@ -95,7 +96,7 @@ func makeButton(icon icons.IconResolver) (*toolButton, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &toolButton{size: f32.Pt(30, 0), icon: ic, rounded: 8}, nil
+	return &toolButton{size: f32.Pt(30, 0), icon: ic, rounded: 10}, nil
 }
 
 func makeAllButtons() ([]*toolButton, error) {
