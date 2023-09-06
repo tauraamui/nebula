@@ -93,7 +93,8 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	ma := image.Rect(0, 0, e.Size.X, e.Size.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
-	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, c.pressEvents(gtx.Dp), c.releaseEvents(gtx.Dp), c.primaryButtonDragEvents(gtx.Dp), c.secondaryButtonDragEvents(gtx.Dp))
+	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, nil, nil, nil, c.secondaryButtonDragEvents(gtx.Dp))
+	c.toolbar.GetActiveTool().Update(gtx)
 	stack.Pop()
 
 	th := c.theme
