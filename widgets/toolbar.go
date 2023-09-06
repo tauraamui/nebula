@@ -10,18 +10,15 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/inkeliz/giosvg"
 	"github.com/tauraamui/nebula/icons"
 )
 
 type Toolbar struct {
-	Size             f32.Point
-	btns             []*toolButton
-	moveAndSelect    toolButton
-	TestButton       widget.Clickable
-	MousePointerIcon *giosvg.Icon
+	Size   f32.Point
+	btns   []*toolButton
+	active int
 }
 
 func NewToolbar(size f32.Point) (*Toolbar, error) {
@@ -53,7 +50,7 @@ func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) lay
 		if i > 0 {
 			btnoff = op.Offset(image.Pt(gtx.Dp(unit.Dp((5+btn.size.X)))*i, 0)).Push(gtx.Ops)
 		}
-		btn.Layout(gtx, t.Size.Y)
+		btn.Layout(gtx, t.Size.Y, i == t.active)
 		if i > 0 {
 			btnoff.Pop()
 		}
@@ -71,19 +68,25 @@ type toolButton struct {
 	icon    *giosvg.Icon
 }
 
-func (b *toolButton) Layout(gtx layout.Context, barHeight float32) layout.Dimensions {
+func (b *toolButton) Layout(gtx layout.Context, barHeight float32, active bool) layout.Dimensions {
 	btn := image.Rect(0, 0, gtx.Dp(unit.Dp(b.size.X)), (gtx.Dp(unit.Dp(barHeight)) - gtx.Dp(10)))
 	rounded := gtx.Dp(unit.Dp(b.rounded))
-	btnClip := clip.RRect{Rect: btn, NE: rounded, SE: rounded, SW: rounded, NW: rounded}.Push(gtx.Ops)
-	paint.ColorOp{Color: color.NRGBA{172, 155, 238, 255}}.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	btnClip.Pop()
+	if active {
+		btnClip := clip.RRect{Rect: btn, NE: rounded, SE: rounded, SW: rounded, NW: rounded}.Push(gtx.Ops)
+		paint.ColorOp{Color: color.NRGBA{172, 155, 238, 255}}.Add(gtx.Ops)
+		paint.PaintOp{}.Add(gtx.Ops)
+		btnClip.Pop()
+	}
 
 	if b.icon != nil {
 		iconOff := op.Offset(image.Pt(gtx.Dp(7), gtx.Dp(7))).Push(gtx.Ops)
 		gtx.Constraints.Min = image.Pt(gtx.Dp(10), gtx.Dp(10))
 		gtx.Constraints.Max = image.Pt(gtx.Dp(100), gtx.Dp(16))
-		paint.ColorOp{Color: color.NRGBA{82, 29, 228, 255}}.Add(gtx.Ops)
+		iconcolor := color.NRGBA{255, 255, 255, 255}
+		if active {
+			iconcolor = color.NRGBA{82, 29, 228, 255}
+		}
+		paint.ColorOp{Color: iconcolor}.Add(gtx.Ops)
 		b.icon.Layout(gtx)
 		iconOff.Pop()
 	}
