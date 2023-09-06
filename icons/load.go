@@ -9,6 +9,9 @@ import (
 //go:embed  mouse-pointer.svg
 var mousePointer []byte
 
+//go:embed  mouse-pointer-outline.svg
+var mousePointerOutline []byte
+
 //go:embed  square.svg
 var square []byte
 
@@ -19,6 +22,10 @@ type IconResolver func() (*giosvg.Icon, error)
 
 func MousePointer() (*giosvg.Icon, error) {
 	return makeIcon(mousePointer)
+}
+
+func MousePointerOutline() (*giosvg.Icon, error) {
+	return makeIcon(mousePointerOutline)
 }
 
 func Square() (*giosvg.Icon, error) {

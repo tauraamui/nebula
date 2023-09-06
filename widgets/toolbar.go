@@ -162,7 +162,7 @@ func makeButton(inactiveIcon, activeIcon icons.IconResolver) (*toolButton, error
 func makeAllButtons() ([]*toolButton, error) {
 	btns := []*toolButton{}
 
-	pointAndSelect, err := makeButton(icons.MousePointer, icons.MousePointer)
+	pointAndSelect, err := makeButton(icons.MousePointerOutline, icons.MousePointer)
 	if err != nil {
 		return nil, err
 	}
