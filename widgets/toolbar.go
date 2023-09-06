@@ -80,7 +80,7 @@ func (b *toolButton) Layout(gtx layout.Context, barHeight float32) layout.Dimens
 	btnClip.Pop()
 
 	if b.icon != nil {
-		iconOff := op.Offset(image.Pt(gtx.Dp(6), gtx.Dp(7))).Push(gtx.Ops)
+		iconOff := op.Offset(image.Pt(gtx.Dp(7), gtx.Dp(7))).Push(gtx.Ops)
 		gtx.Constraints.Min = image.Pt(gtx.Dp(10), gtx.Dp(10))
 		gtx.Constraints.Max = image.Pt(gtx.Dp(100), gtx.Dp(16))
 		paint.ColorOp{Color: color.NRGBA{82, 29, 228, 255}}.Add(gtx.Ops)
@@ -107,7 +107,13 @@ func makeAllButtons() ([]*toolButton, error) {
 		return nil, err
 	}
 
+	drawNewMatrix, err := makeButton(icons.Square)
+	if err != nil {
+		return nil, err
+	}
+
 	btns = append(btns, pointAndSelect)
+	btns = append(btns, drawNewMatrix)
 
 	return btns, nil
 }
