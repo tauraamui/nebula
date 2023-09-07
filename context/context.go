@@ -22,17 +22,17 @@ type Context struct {
 	appEvents []struct{}
 }
 
-func NewContext(ops *op.Ops, e system.FrameEvent) Context {
-	return Context{
+func NewContext(ops *op.Ops, e system.FrameEvent) *Context {
+	return &Context{
 		layout.NewContext(ops, e),
 		[]struct{}{},
 	}
 }
 
-func (c Context) AppEvents() []struct{} {
+func (c *Context) Events() []struct{} {
 	return c.appEvents
 }
 
-func (c Context) AddAppEvent(e struct{}) {
+func (c *Context) PushEvent(e struct{}) {
 	c.appEvents = append(c.appEvents, e)
 }

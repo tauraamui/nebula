@@ -5,10 +5,10 @@ import (
 )
 
 type Tool interface {
-	Update(gtx context.Context)
+	Update(gtx *context.Context)
 }
 
 type Select struct {
 }
 
-func (s *Select) Update(gtx context.Context) {}
+func (s *Select) Update(gtx *context.Context) {}
