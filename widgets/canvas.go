@@ -11,13 +11,13 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/io/system"
-	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
+	"github.com/tauraamui/nebula/context"
 	"github.com/tauraamui/nebula/f32x"
 	"github.com/tauraamui/nebula/gesturex"
 	"gonum.org/v1/gonum/mat"
@@ -62,7 +62,7 @@ func NewCanvas() *Canvas {
 }
 
 func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
-	gtx := layout.NewContext(ops, e)
+	gtx := context.NewContext(ops, e)
 
 	key.InputOp{
 		Tag: "root",
@@ -93,13 +93,15 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	ma := image.Rect(0, 0, e.Size.X, e.Size.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
-	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, c.pressEvents(gtx.Dp), c.releaseEvents(gtx.Dp), c.primaryButtonDragEvents(gtx.Dp), c.secondaryButtonDragEvents(gtx.Dp))
+	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, nil, nil, nil, c.secondaryButtonDragEvents(gtx.Dp))
+	activeTool := c.toolbar.GetActiveTool()
+	activeTool.Update(gtx)
 	stack.Pop()
 
 	th := c.theme
 	for _, m := range c.matrices {
 		m.Layout(gtx, th, c.offset, c.debug)
-		m.Update(gtx, c.offset, c.debug)
+		m.Update(gtx.Context, c.offset, c.debug)
 	}
 
 	selectionBounds := c.pendingSelectionBounds.SwappedBounds()
@@ -110,7 +112,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	scale.Pop()
 
 	off := op.Offset(image.Pt((e.Size.X/2)-gtx.Dp(unit.Dp(c.toolbar.Size.Round().X))/2, gtx.Dp(10))).Push(gtx.Ops)
-	c.toolbar.Layout(gtx, th, c.debug)
+	c.toolbar.Layout(gtx.Context, th, c.debug)
 	off.Pop()
 }
 

@@ -14,10 +14,12 @@ import (
 	"github.com/inkeliz/giosvg"
 	"github.com/tauraamui/nebula/gesturex"
 	"github.com/tauraamui/nebula/icons"
+	"github.com/tauraamui/nebula/tool"
 )
 
 type Toolbar struct {
 	Size   f32.Point
+	tools  []tool.Tool
 	btns   []*toolButton
 	active int
 }
@@ -64,6 +66,10 @@ func (t *Toolbar) Layout(gtx layout.Context, th *material.Theme, debug bool) lay
 	return layout.Dimensions{}
 }
 
+func (t *Toolbar) GetActiveTool() tool.Tool {
+	return t.btns[t.active].tool
+}
+
 func (t *Toolbar) buttonClicked(index int) func() {
 	return func() {
 		t.active = index
@@ -71,6 +77,7 @@ func (t *Toolbar) buttonClicked(index int) func() {
 }
 
 type toolButton struct {
+	tool                     tool.Tool
 	inactiveIcon, activeIcon *giosvg.Icon
 	size                     f32.Point
 	rounded                  int
@@ -166,11 +173,13 @@ func makeAllButtons() ([]*toolButton, error) {
 	if err != nil {
 		return nil, err
 	}
+	pointAndSelect.tool = &tool.Select{}
 
 	drawNewMatrix, err := makeButton(icons.SquareBorder, icons.Square)
 	if err != nil {
 		return nil, err
 	}
+	drawNewMatrix.tool = &tool.Edit{}
 
 	btns = append(btns, pointAndSelect)
 	btns = append(btns, drawNewMatrix)
