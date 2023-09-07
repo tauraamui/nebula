@@ -14,6 +14,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
+	"github.com/tauraamui/nebula/context"
 	"github.com/tauraamui/nebula/f32x"
 	"github.com/tauraamui/nebula/gesturex"
 	nmat "github.com/tauraamui/nebula/mat"
@@ -44,7 +45,7 @@ type Matrix[T any] struct {
 	wasMovingMinLast       bool
 }
 
-func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, offset f32.Point, debug bool) layout.Dimensions {
+func (m *Matrix[T]) Layout(gtx context.Context, th *material.Theme, offset f32.Point, debug bool) layout.Dimensions {
 	m.cellSize.X = float32(cellWidth)
 	m.cellSize.Y = float32(cellHeight)
 
@@ -83,7 +84,7 @@ func (m *Matrix[T]) Layout(gtx layout.Context, th *material.Theme, offset f32.Po
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 
-func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32x.Rectangle, color color.NRGBA) {
+func renderPendingSelectionSpan(gtx context.Context, posx, posy int, span f32x.Rectangle, color color.NRGBA) {
 	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
 	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: color}.Add(gtx.Ops)
@@ -91,7 +92,7 @@ func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32x.Re
 	selectionClip.Pop()
 }
 
-func renderCellSelection(gtx layout.Context, x, y int, posx, posy, cellwidth, cellheight int) {
+func renderCellSelection(gtx context.Context, x, y int, posx, posy, cellwidth, cellheight int) {
 	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
 	// render cell border
 	borderWidth := 2 * float32(gtx.Dp(1))
@@ -102,7 +103,7 @@ func renderCellSelection(gtx layout.Context, x, y int, posx, posy, cellwidth, ce
 	cl3.Pop()
 }
 
-func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA, th *material.Theme) {
+func renderCell(gtx context.Context, content string, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA, th *material.Theme) {
 	// render background of cell
 	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
 	cl1 := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
@@ -116,7 +117,7 @@ func renderCell(gtx layout.Context, content string, x, y int, posx, posy, cellwi
 	lineHeightPx := gtx.Sp(14)
 	l.Color = color.NRGBA{R: 10, G: 10, B: 10, A: 255}
 	off := op.Offset(cell.Min.Add(image.Pt(gtx.Sp(3), (cellheight/2)-(lineHeightPx/2)))).Push(gtx.Ops)
-	l.Layout(gtx)
+	l.Layout(gtx.Context)
 	off.Pop()
 	cl2.Pop()
 

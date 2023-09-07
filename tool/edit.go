@@ -6,10 +6,10 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
-	"gioui.org/layout"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"github.com/tauraamui/nebula/context"
 	"github.com/tauraamui/nebula/f32x"
 	"github.com/tauraamui/nebula/gesturex"
 )
@@ -28,7 +28,7 @@ type Edit struct {
 	pendingSelectionBounds f32x.Rectangle
 }
 
-func (e *Edit) Update(gtx layout.Context) {
+func (e *Edit) Update(gtx context.Context) {
 	if e.input == nil {
 		e.input = &gesturex.InputEvents{
 			Tag: e,
@@ -36,7 +36,7 @@ func (e *Edit) Update(gtx layout.Context) {
 	}
 
 	e.input.Add(gtx.Ops)
-	e.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, e.pressEvents(gtx.Dp), e.releaseEvents(gtx.Dp), e.primaryButtonDragEvents(gtx.Dp), nil)
+	e.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, e.pressEvents(gtx.Dp), e.releaseEvents(gtx.Dp, gtx.AddAppEvent), e.primaryButtonDragEvents(gtx.Dp), nil)
 
 	selectionBounds := e.pendingSelectionBounds.SwappedBounds()
 	if !selectionBounds.Empty() {
@@ -57,11 +57,12 @@ func (e *Edit) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons p
 	}
 }
 
-func (e *Edit) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
+func (e *Edit) releaseEvents(dp func(v unit.Dp) int, addEvent func(e struct{})) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
 			selectionArea := e.pendingSelectionBounds.SwappedBounds()
 			if !selectionArea.Empty() {
+				addEvent(struct{}{})
 				e.pendingSelectionBounds = f32x.Rectangle{}
 				return
 			}
@@ -77,7 +78,7 @@ func (e *Edit) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Poi
 	}
 }
 
-func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32x.Rectangle, bgcolor color.NRGBA) {
+func renderPendingSelectionSpan(gtx context.Context, posx, posy int, span f32x.Rectangle, bgcolor color.NRGBA) {
 	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
 	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: bgcolor}.Add(gtx.Ops)
@@ -94,7 +95,7 @@ func renderPendingSelectionSpan(gtx layout.Context, posx, posy int, span f32x.Re
 	selectionClip.Pop()
 }
 
-func renderCell(gtx layout.Context, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA) {
+func renderCell(gtx context.Context, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA) {
 	// render background of cell
 	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
 	cl1 := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)

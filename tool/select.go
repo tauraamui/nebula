@@ -1,12 +1,14 @@
 package tool
 
-import "gioui.org/layout"
+import (
+	"github.com/tauraamui/nebula/context"
+)
 
 type Tool interface {
-	Update(gtx layout.Context)
+	Update(gtx context.Context)
 }
 
 type Select struct {
 }
 
-func (s *Select) Update(gtx layout.Context) {}
+func (s *Select) Update(gtx context.Context) {}
