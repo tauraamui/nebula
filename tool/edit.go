@@ -57,13 +57,16 @@ func (e *Edit) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons p
 	}
 }
 
-func (e *Edit) releaseEvents(dp func(v unit.Dp) int, pushEvent func(e struct{})) func(pos f32.Point, buttons pointer.Buttons) {
+func (e *Edit) releaseEvents(dp func(v unit.Dp) int, pushEvent func(e any)) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
 			selectionArea := e.pendingSelectionBounds.SwappedBounds()
 			if !selectionArea.Empty() {
 				// TODO:(tauraamui) -> implement pushing of "create matrix event" which will be read by canvas and actioned
-				pushEvent(struct{}{})
+				pushEvent(context.CreateMatrix{
+					Pos:    selectionArea.Min,
+					Bounds: selectionArea,
+				})
 				e.pendingSelectionBounds = f32x.Rectangle{}
 				return
 			}

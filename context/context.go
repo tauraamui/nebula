@@ -1,9 +1,11 @@
 package context
 
 import (
+	"gioui.org/f32"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"github.com/tauraamui/nebula/f32x"
 )
 
 /*
@@ -19,20 +21,25 @@ type Context interface {
 
 type Context struct {
 	layout.Context
-	appEvents []struct{}
+	appEvents []any
 }
 
 func NewContext(ops *op.Ops, e system.FrameEvent) *Context {
 	return &Context{
 		layout.NewContext(ops, e),
-		[]struct{}{},
+		[]any{},
 	}
 }
 
-func (c *Context) Events() []struct{} {
+func (c *Context) Events() []any {
 	return c.appEvents
 }
 
-func (c *Context) PushEvent(e struct{}) {
+func (c *Context) PushEvent(e any) {
 	c.appEvents = append(c.appEvents, e)
+}
+
+type CreateMatrix struct {
+	Pos    f32.Point
+	Bounds f32x.Rectangle
 }

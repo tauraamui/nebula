@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -114,6 +115,13 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	off := op.Offset(image.Pt((e.Size.X/2)-gtx.Dp(unit.Dp(c.toolbar.Size.Round().X))/2, gtx.Dp(10))).Push(gtx.Ops)
 	c.toolbar.Layout(gtx.Context, th, c.debug)
 	off.Pop()
+
+	for _, e := range gtx.Events() {
+		switch evt := e.(type) {
+		case context.CreateMatrix:
+			fmt.Printf("%+v\n", evt)
+		}
+	}
 }
 
 func (c *Canvas) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
