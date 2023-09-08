@@ -77,6 +77,10 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 		}
 	}
 
+	dpScale := gtx.Dp(1)
+	zoomLevelPx := float32(dpScale / dpScale)
+	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
+
 	paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 
@@ -85,6 +89,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 			Tag: c,
 		}
 	}
+
 	ma := image.Rect(0, 0, e.Size.X, e.Size.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
@@ -93,9 +98,6 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	activeTool.Update(gtx)
 	stack.Pop()
 
-	dpScale := gtx.Dp(1)
-	zoomLevelPx := float32(dpScale / dpScale)
-	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
 	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
 
 	th := c.theme
@@ -121,7 +123,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 		switch evt := e.(type) {
 		case context.CreateMatrix:
 			c.matrices = append(c.matrices, &Matrix[float64]{
-				Pos:   evt.Pos.Sub(c.offset),
+				Pos:   evt.Pos.Div(float32(zoomLevelPx)),
 				Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 				Data:  mat.NewDense(evt.Rows, evt.Cols, make([]float64, evt.Rows*evt.Cols)),
 			})
