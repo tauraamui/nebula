@@ -57,7 +57,8 @@ func (d *InputEvents) handlePointerEvent(
 			if pressCallback != nil {
 				pressCallback(e.Position, e.Buttons)
 			}
-			ptr = pointer.CursorDefault
+			//ptr = pointer.CursorDefault
+			ptr = pointer.CursorCrosshair
 		} else {
 			ptr = pointer.CursorGrabbing
 		}
@@ -75,7 +76,7 @@ func (d *InputEvents) handlePointerEvent(
 			if e.Buttons == pointer.ButtonPrimary {
 				if primaryDragCallback != nil {
 					primaryDragCallback(diff)
-					ptr = pointer.CursorDefault
+					ptr = pointer.CursorCrosshair
 				}
 			} else if e.Buttons == pointer.ButtonSecondary {
 				if secondaryDragCallback != nil {

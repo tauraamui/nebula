@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -78,6 +77,10 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 		}
 	}
 
+	dpScale := gtx.Dp(1)
+	zoomLevelPx := float32(dpScale / dpScale)
+	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
+
 	paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 
@@ -86,6 +89,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 			Tag: c,
 		}
 	}
+
 	ma := image.Rect(0, 0, e.Size.X, e.Size.Y)
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
@@ -94,13 +98,10 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	activeTool.Update(gtx)
 	stack.Pop()
 
-	dpScale := gtx.Dp(1)
-	zoomLevelPx := float32(dpScale / dpScale)
-	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
 	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
 
 	th := c.theme
-	canvasOff := op.Offset(image.Pt(c.offset.Round().X, c.offset.Round().Y)).Push(gtx.Ops)
+	canvasOff := op.Offset(image.Pt(gtx.Dp(unit.Dp(c.offset.Round().X)), gtx.Dp(unit.Dp(c.offset.Round().Y)))).Push(gtx.Ops)
 	for _, m := range c.matrices {
 		m.Layout(gtx, th, c.debug)
 		m.Update(gtx.Context, c.debug)
@@ -121,7 +122,14 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	for _, e := range gtx.Events() {
 		switch evt := e.(type) {
 		case context.CreateMatrix:
-			fmt.Printf("%+v\n", evt)
+			if evt.Rows == 0 || evt.Cols == 0 {
+				continue
+			}
+			c.matrices = append(c.matrices, &Matrix[float64]{
+				Pos:   evt.Pos.Div(float32(zoomLevelPx)).Sub(c.offset),
+				Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
+				Data:  mat.NewDense(evt.Rows, evt.Cols, make([]float64, evt.Rows*evt.Cols)),
+			})
 		}
 	}
 }

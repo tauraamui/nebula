@@ -40,6 +40,7 @@ func (c *Context) PushEvent(e any) {
 }
 
 type CreateMatrix struct {
-	Pos    f32.Point
-	Bounds f32x.Rectangle
+	Pos        f32.Point
+	Rows, Cols int
+	Bounds     f32x.Rectangle
 }

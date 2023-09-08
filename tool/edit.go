@@ -17,15 +17,13 @@ import (
 const (
 	cellWidth  unit.Dp = 80
 	cellHeight unit.Dp = 25
-	cols       int     = 15
-	rows       int     = 10
 )
 
 var cellSize f32.Point = f32.Pt(float32(cellWidth), float32(cellHeight))
 
 type Edit struct {
-	input                  *gesturex.InputEvents
-	pendingSelectionBounds f32x.Rectangle
+	input                 *gesturex.InputEvents
+	pendingCreationBounds f32x.Rectangle
 }
 
 func (e *Edit) Update(gtx *context.Context) {
@@ -38,9 +36,9 @@ func (e *Edit) Update(gtx *context.Context) {
 	e.input.Add(gtx.Ops)
 	e.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, e.pressEvents(gtx.Dp), e.releaseEvents(gtx.Dp, gtx.PushEvent), e.primaryButtonDragEvents(gtx.Dp), nil)
 
-	selectionBounds := e.pendingSelectionBounds.SwappedBounds()
+	selectionBounds := e.pendingCreationBounds.SwappedBounds()
 	if !selectionBounds.Empty() {
-		renderPendingSelectionSpan(gtx, 0, 0, selectionBounds, color.NRGBA{50, 110, 220, 80})
+		renderPendingCreationSpan(gtx, selectionBounds, color.NRGBA{50, 110, 220, 80})
 	}
 
 }
@@ -52,22 +50,23 @@ func (e *Edit) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons p
 		}
 
 		pos = pos.Div(float32(dp(1)))
-		e.pendingSelectionBounds = f32x.Rectangle{Min: f32.Pt(pos.X, pos.Y)}
-		e.pendingSelectionBounds.Max = e.pendingSelectionBounds.Min
+		e.pendingCreationBounds = f32x.Rectangle{Min: f32.Pt(pos.X, pos.Y)}
+		e.pendingCreationBounds.Max = e.pendingCreationBounds.Min
 	}
 }
 
 func (e *Edit) releaseEvents(dp func(v unit.Dp) int, pushEvent func(e any)) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
-			selectionArea := e.pendingSelectionBounds.SwappedBounds()
+			selectionArea := e.pendingCreationBounds.SwappedBounds()
 			if !selectionArea.Empty() {
-				// TODO:(tauraamui) -> implement pushing of "create matrix event" which will be read by canvas and actioned
+				rows, cols := calcRowsAndColsFromSpan(dp, selectionArea)
 				pushEvent(context.CreateMatrix{
-					Pos:    selectionArea.Min,
-					Bounds: selectionArea,
+					Pos:  selectionArea.Min,
+					Rows: rows,
+					Cols: cols,
 				})
-				e.pendingSelectionBounds = f32x.Rectangle{}
+				e.pendingCreationBounds = f32x.Rectangle{}
 				return
 			}
 		}
@@ -77,22 +76,23 @@ func (e *Edit) releaseEvents(dp func(v unit.Dp) int, pushEvent func(e any)) func
 func (e *Edit) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Point) {
 	return func(diff f32.Point) {
 		scaledDiff := diff.Div(float32(dp(1)))
-		e.pendingSelectionBounds.Max = e.pendingSelectionBounds.Max.Add(scaledDiff)
+		e.pendingCreationBounds.Max = e.pendingCreationBounds.Max.Add(scaledDiff)
 
 	}
 }
 
-func renderPendingSelectionSpan(gtx *context.Context, posx, posy int, span f32x.Rectangle, bgcolor color.NRGBA) {
-	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
+func renderPendingCreationSpan(gtx *context.Context, span f32x.Rectangle, bgcolor color.NRGBA) {
+	selectionArea := image.Rect(gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(span.Max.X)), gtx.Dp(unit.Dp(span.Max.Y)))
 	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: bgcolor}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 
 	// render pending matrix cells
+	rows, cols := calcRowsAndColsFromSpan(gtx.Dp, span)
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			renderCell(gtx, x, y, posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(cellSize.X)), gtx.Dp(unit.Dp(cellSize.Y)), color.NRGBA{255, 255, 255, 255})
+			renderCell(gtx, x, y, gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(cellSize.X)), gtx.Dp(unit.Dp(cellSize.Y)), color.NRGBA{255, 255, 255, 255})
 		}
 	}
 
@@ -114,4 +114,10 @@ func renderCell(gtx *context.Context, x, y int, posx, posy, cellwidth, cellheigh
 	paint.ColorOp{Color: borderColor}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	cl3.Pop()
+}
+
+func calcRowsAndColsFromSpan(dp func(v unit.Dp) int, span f32x.Rectangle) (int, int) {
+	rows := (span.Max.Round().Y - span.Min.Round().Y) / int(cellHeight)
+	cols := (span.Max.Round().X - span.Min.Round().X) / int(cellWidth)
+	return rows, cols
 }
