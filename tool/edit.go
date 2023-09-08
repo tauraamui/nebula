@@ -40,7 +40,7 @@ func (e *Edit) Update(gtx *context.Context) {
 
 	selectionBounds := e.pendingCreationBounds.SwappedBounds()
 	if !selectionBounds.Empty() {
-		renderPendingCreationSpan(gtx, 0, 0, selectionBounds, color.NRGBA{50, 110, 220, 80})
+		renderPendingCreationSpan(gtx, selectionBounds, color.NRGBA{50, 110, 220, 80})
 	}
 
 }
@@ -82,7 +82,7 @@ func (e *Edit) primaryButtonDragEvents(dp func(v unit.Dp) int) func(diff f32.Poi
 	}
 }
 
-func renderPendingCreationSpan(gtx *context.Context, posx, posy int, span f32x.Rectangle, bgcolor color.NRGBA) {
+func renderPendingCreationSpan(gtx *context.Context, span f32x.Rectangle, bgcolor color.NRGBA) {
 	selectionArea := image.Rect(gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(span.Max.X)), gtx.Dp(unit.Dp(span.Max.Y)))
 	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: bgcolor}.Add(gtx.Ops)
@@ -92,7 +92,7 @@ func renderPendingCreationSpan(gtx *context.Context, posx, posy int, span f32x.R
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			renderCell(gtx, x, y, posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(cellSize.X)), gtx.Dp(unit.Dp(cellSize.Y)), color.NRGBA{255, 255, 255, 255})
+			renderCell(gtx, x, y, gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(cellSize.X)), gtx.Dp(unit.Dp(cellSize.Y)), color.NRGBA{255, 255, 255, 255})
 		}
 	}
 
