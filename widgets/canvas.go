@@ -100,10 +100,12 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	stack.Pop()
 
 	th := c.theme
+	canvasOff := op.Offset(image.Pt(c.offset.Round().X, c.offset.Round().Y)).Push(gtx.Ops)
 	for _, m := range c.matrices {
-		m.Layout(gtx, th, c.offset, c.debug)
-		m.Update(gtx.Context, c.offset, c.debug)
+		m.Layout(gtx, th, c.debug)
+		m.Update(gtx.Context, c.debug)
 	}
+	canvasOff.Pop()
 
 	selectionBounds := c.pendingSelectionBounds.SwappedBounds()
 	if !selectionBounds.Empty() {

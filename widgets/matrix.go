@@ -45,11 +45,11 @@ type Matrix[T any] struct {
 	wasMovingMinLast       bool
 }
 
-func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, offset f32.Point, debug bool) layout.Dimensions {
+func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, debug bool) layout.Dimensions {
 	m.cellSize.X = float32(cellWidth)
 	m.cellSize.Y = float32(cellHeight)
 
-	pos := m.Pos.Add(offset)
+	pos := m.Pos
 	posX := gtx.Dp(unit.Dp(pos.X))
 	posY := gtx.Dp(unit.Dp(pos.Y))
 
@@ -130,12 +130,12 @@ func renderCell(gtx *context.Context, content string, x, y int, posx, posy, cell
 	cl3.Pop()
 }
 
-func (m *Matrix[T]) Update(gtx layout.Context, offset f32.Point, debug bool) {
+func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 	if m.inputEvents == nil {
 		m.inputEvents = &gesturex.InputEvents{Tag: m}
 	}
 
-	pos := f32.Pt(float32(gtx.Dp(unit.Dp(m.Pos.Add(offset).X))), float32(gtx.Dp(unit.Dp(m.Pos.Add(offset).Y))))
+	pos := f32.Pt(float32(gtx.Dp(unit.Dp(m.Pos.X))), float32(gtx.Dp(unit.Dp(m.Pos.Y))))
 	size := f32.Pt(m.Size.X, m.Size.Y)
 
 	posPt := pos.Round()
@@ -152,11 +152,11 @@ func (m *Matrix[T]) Update(gtx layout.Context, offset f32.Point, debug bool) {
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.inputEvents.Add(gtx.Ops)
 
-	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp, offset), m.releaseEvents(gtx.Dp, offset), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
+	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.releaseEvents(gtx.Dp), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
 	stack.Pop()
 }
 
-func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int, offset f32.Point) func(pos f32.Point, buttons pointer.Buttons) {
+func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons != pointer.ButtonPrimary {
 			return
@@ -167,12 +167,12 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int, offset f32.Point) func(p
 		pos = pos.Div(float32(dp(1)))
 		// wip pending selection implementation
 		m.pendingSelectionBounds = f32x.Rectangle{Min: f32.Pt(pos.X, pos.Y)}
-		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos.Add(offset))
+		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos)
 		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
 	}
 }
 
-func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int, offset f32.Point) func(pos f32.Point, buttons pointer.Buttons) {
+func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
 			selectionArea := m.pendingSelectionBounds.SwappedBounds()
@@ -181,7 +181,7 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int, offset f32.Point) func
 				m.pendingSelectionBounds = f32x.Rectangle{}
 				return
 			}
-			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos.Add(offset), m.cellSize, pos)}
+			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos, m.cellSize, pos)}
 		}
 	}
 }
