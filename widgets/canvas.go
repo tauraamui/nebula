@@ -78,11 +78,6 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 		}
 	}
 
-	dpScale := gtx.Dp(1)
-	zoomLevelPx := float32(dpScale / dpScale)
-	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
-	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
-
 	paint.ColorOp{Color: color.NRGBA{R: 18, G: 18, B: 18, A: 255}}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 
@@ -99,6 +94,11 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	activeTool.Update(gtx)
 	stack.Pop()
 
+	dpScale := gtx.Dp(1)
+	zoomLevelPx := float32(dpScale / dpScale)
+	zoomLevelPx = zoomLevelPx - (zoomLevelPx * .1)
+	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
+
 	th := c.theme
 	canvasOff := op.Offset(image.Pt(c.offset.Round().X, c.offset.Round().Y)).Push(gtx.Ops)
 	for _, m := range c.matrices {
@@ -109,7 +109,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 
 	selectionBounds := c.pendingSelectionBounds.SwappedBounds()
 	if !selectionBounds.Empty() {
-		renderPendingSelectionSpan(gtx, 0, 0, selectionBounds, color.NRGBA{50, 110, 220, 80})
+		renderPendingSelectionSpan(gtx, selectionBounds, color.NRGBA{50, 110, 220, 80})
 	}
 
 	scale.Pop()
