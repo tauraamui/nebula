@@ -45,13 +45,15 @@ type Matrix[T any] struct {
 	wasMovingMinLast       bool
 }
 
-func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, offset f32.Point, debug bool) layout.Dimensions {
+func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, debug bool) layout.Dimensions {
 	m.cellSize.X = float32(cellWidth)
 	m.cellSize.Y = float32(cellHeight)
 
-	pos := m.Pos.Add(offset)
+	pos := m.Pos
 	posX := gtx.Dp(unit.Dp(pos.X))
 	posY := gtx.Dp(unit.Dp(pos.Y))
+
+	off := op.Offset(image.Pt(posX, posY)).Push(gtx.Ops)
 
 	cellSize := f32.Point{X: float32(gtx.Dp(cellWidth)), Y: float32(gtx.Dp(cellHeight))}
 
@@ -64,36 +66,37 @@ func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, offset f32.
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
+			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
 		}
 	}
 
 	for _, selectedCell := range m.SelectedCells {
-		renderCellSelection(gtx, selectedCell.X, selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
+		renderCellSelection(gtx, selectedCell.X, selectedCell.Y, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
 	}
-	//renderCellSelection(gtx, selectedCell.X, m.selectedCell.Y, posX, posY, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
 
 	selectionBounds := m.pendingSelectionBounds.SwappedBounds()
 	if !selectionBounds.Empty() {
-		area := image.Rect(posX, posY, posX+m.Size.Round().X, posY+m.Size.Round().Y)
+		area := image.Rect(0, 0, m.Size.Round().X, m.Size.Round().Y)
 		clip := clip.Rect{Min: area.Min, Max: area.Max}.Push(gtx.Ops)
-		renderPendingSelectionSpan(gtx, posX, posY, selectionBounds, color.NRGBA{224, 63, 222, 110})
+		renderPendingSelectionSpan(gtx, selectionBounds, color.NRGBA{224, 63, 222, 110})
 		clip.Pop()
 	}
+
+	off.Pop()
 
 	return layout.Dimensions{Size: m.Size.Round()}
 }
 
-func renderPendingSelectionSpan(gtx *context.Context, posx, posy int, span f32x.Rectangle, color color.NRGBA) {
-	selectionArea := image.Rect(posx+gtx.Dp(unit.Dp(span.Min.X)), posy+gtx.Dp(unit.Dp(span.Min.Y)), posx+gtx.Dp(unit.Dp(span.Max.X)), posy+gtx.Dp(unit.Dp(span.Max.Y)))
+func renderPendingSelectionSpan(gtx *context.Context, span f32x.Rectangle, color color.NRGBA) {
+	selectionArea := image.Rect(gtx.Dp(unit.Dp(span.Min.X)), gtx.Dp(unit.Dp(span.Min.Y)), gtx.Dp(unit.Dp(span.Max.X)), gtx.Dp(unit.Dp(span.Max.Y)))
 	selectionClip := clip.Rect{Min: selectionArea.Min, Max: selectionArea.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: color}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	selectionClip.Pop()
 }
 
-func renderCellSelection(gtx *context.Context, x, y int, posx, posy, cellwidth, cellheight int) {
-	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
+func renderCellSelection(gtx *context.Context, x, y, cellwidth, cellheight int) {
+	cell := image.Rect((cellwidth * x), (y * cellheight), ((cellwidth * x) + cellwidth), ((cellheight * y) + cellheight))
 	// render cell border
 	borderWidth := 2 * float32(gtx.Dp(1))
 	borderColor := color.NRGBA{R: 230, G: 90, B: 90, A: 255}
@@ -103,9 +106,9 @@ func renderCellSelection(gtx *context.Context, x, y int, posx, posy, cellwidth, 
 	cl3.Pop()
 }
 
-func renderCell(gtx *context.Context, content string, x, y int, posx, posy, cellwidth, cellheight int, bgcolor color.NRGBA, th *material.Theme) {
+func renderCell(gtx *context.Context, content string, x, y, cellwidth, cellheight int, bgcolor color.NRGBA, th *material.Theme) {
 	// render background of cell
-	cell := image.Rect(posx+(cellwidth*x), posy+(y*cellheight), posx+((cellwidth*x)+cellwidth), posy+((cellheight*y)+cellheight))
+	cell := image.Rect(cellwidth*x, y*cellheight, ((cellwidth * x) + cellwidth), ((cellheight * y) + cellheight))
 	cl1 := clip.Rect{Min: cell.Min, Max: cell.Max}.Push(gtx.Ops)
 	paint.ColorOp{Color: bgcolor}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
@@ -130,12 +133,12 @@ func renderCell(gtx *context.Context, content string, x, y int, posx, posy, cell
 	cl3.Pop()
 }
 
-func (m *Matrix[T]) Update(gtx layout.Context, offset f32.Point, debug bool) {
+func (m *Matrix[T]) Update(gtx layout.Context, debug bool) {
 	if m.inputEvents == nil {
 		m.inputEvents = &gesturex.InputEvents{Tag: m}
 	}
 
-	pos := f32.Pt(float32(gtx.Dp(unit.Dp(m.Pos.Add(offset).X))), float32(gtx.Dp(unit.Dp(m.Pos.Add(offset).Y))))
+	pos := f32.Pt(float32(gtx.Dp(unit.Dp(m.Pos.X))), float32(gtx.Dp(unit.Dp(m.Pos.Y))))
 	size := f32.Pt(m.Size.X, m.Size.Y)
 
 	posPt := pos.Round()
@@ -152,11 +155,11 @@ func (m *Matrix[T]) Update(gtx layout.Context, offset f32.Point, debug bool) {
 	stack := clip.Rect(ma).Push(gtx.Ops)
 	m.inputEvents.Add(gtx.Ops)
 
-	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp, offset), m.releaseEvents(gtx.Dp, offset), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
+	m.inputEvents.Events(gtx.Metric, gtx.Ops, gtx.Queue, m.pressEvents(gtx.Dp), m.releaseEvents(gtx.Dp), m.primaryButtonDragEvents(gtx.Dp), m.secondaryButtonDragEvents(gtx.Dp))
 	stack.Pop()
 }
 
-func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int, offset f32.Point) func(pos f32.Point, buttons pointer.Buttons) {
+func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons != pointer.ButtonPrimary {
 			return
@@ -167,12 +170,12 @@ func (m *Matrix[T]) pressEvents(dp func(v unit.Dp) int, offset f32.Point) func(p
 		pos = pos.Div(float32(dp(1)))
 		// wip pending selection implementation
 		m.pendingSelectionBounds = f32x.Rectangle{Min: f32.Pt(pos.X, pos.Y)}
-		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos.Add(offset))
+		m.pendingSelectionBounds.Min = m.pendingSelectionBounds.Min.Sub(m.Pos)
 		m.pendingSelectionBounds.Max = m.pendingSelectionBounds.Min
 	}
 }
 
-func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int, offset f32.Point) func(pos f32.Point, buttons pointer.Buttons) {
+func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int) func(pos f32.Point, buttons pointer.Buttons) {
 	return func(pos f32.Point, buttons pointer.Buttons) {
 		if buttons == pointer.ButtonPrimary {
 			selectionArea := m.pendingSelectionBounds.SwappedBounds()
@@ -181,7 +184,7 @@ func (m *Matrix[T]) releaseEvents(dp func(v unit.Dp) int, offset f32.Point) func
 				m.pendingSelectionBounds = f32x.Rectangle{}
 				return
 			}
-			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos.Add(offset), m.cellSize, pos)}
+			m.SelectedCells = []image.Point{resolvePressedCell(m.Data.Dims())(dp, m.Pos, m.cellSize, pos)}
 		}
 	}
 }
