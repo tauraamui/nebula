@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"math"
-	"strconv"
 
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
@@ -60,11 +59,41 @@ func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, debug bool)
 	}
 	m.Size = totalSize
 
+	bgnd := clip.Rect{Min: image.Pt(0, 0), Max: image.Pt(m.Size.Round().X, m.Size.Round().Y)}.Push(gtx.Ops)
+	paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+
+	cells := clip.Path{}
+	cells.Begin(gtx.Ops)
+
+	cellwidth := gtx.Dp(unit.Dp(m.cellSize.X))
+	cellheight := gtx.Dp(unit.Dp(m.cellSize.Y))
+
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
-			renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
+			cells.MoveTo(f32.Pt(float32(cellwidth*x), float32(cellheight*y)))
+			cells.LineTo(f32.Pt(float32((cellwidth*x)+cellwidth), float32(cellheight*y)))
+			cells.LineTo(f32.Pt(float32((cellwidth*x)+cellwidth), float32(cellheight*y+cellheight)))
+			cells.LineTo(f32.Pt(float32(cellwidth*x), float32(cellheight*y+cellheight)))
 		}
 	}
+	cells.Close()
+
+	borderWidth := float32(.35) / float32(gtx.Dp(1))
+	borderColor := color.NRGBA{R: 55, G: 55, B: 55, A: 255}
+	cStroke := clip.Stroke{Path: cells.End(), Width: borderWidth}.Op().Push(gtx.Ops)
+	paint.ColorOp{Color: borderColor}.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	cStroke.Pop()
+	bgnd.Pop()
+
+	/*
+		for x := 0; x < cols; x++ {
+			for y := 0; y < rows; y++ {
+				renderCell(gtx, strconv.FormatFloat(m.Data.At(y, x), 'f', -1, 64), x, y, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)), m.Color, th)
+			}
+		}
+	*/
 
 	for _, selectedCell := range m.SelectedCells {
 		renderCellSelection(gtx, selectedCell.X, selectedCell.Y, gtx.Dp(unit.Dp(m.cellSize.X)), gtx.Dp(unit.Dp(m.cellSize.Y)))
