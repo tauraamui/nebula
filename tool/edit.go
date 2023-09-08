@@ -62,10 +62,10 @@ func (e *Edit) releaseEvents(dp func(v unit.Dp) int, pushEvent func(e any)) func
 		if buttons == pointer.ButtonPrimary {
 			selectionArea := e.pendingSelectionBounds.SwappedBounds()
 			if !selectionArea.Empty() {
-				// TODO:(tauraamui) -> implement pushing of "create matrix event" which will be read by canvas and actioned
 				pushEvent(context.CreateMatrix{
-					Pos:    selectionArea.Min,
-					Bounds: selectionArea,
+					Pos:  selectionArea.Min,
+					Rows: 5,
+					Cols: 5,
 				})
 				e.pendingSelectionBounds = f32x.Rectangle{}
 				return
