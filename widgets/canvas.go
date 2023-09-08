@@ -121,7 +121,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 		switch evt := e.(type) {
 		case context.CreateMatrix:
 			c.matrices = append(c.matrices, &Matrix[float64]{
-				Pos:   evt.Pos,
+				Pos:   evt.Pos.Sub(c.offset),
 				Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 				Data:  mat.NewDense(evt.Rows, evt.Cols, make([]float64, evt.Rows*evt.Cols)),
 			})
