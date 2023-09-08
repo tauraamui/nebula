@@ -99,7 +99,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	scale := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Point{X: float32(zoomLevelPx), Y: float32(zoomLevelPx)})).Push(gtx.Ops)
 
 	th := c.theme
-	canvasOff := op.Offset(image.Pt(c.offset.Round().X, c.offset.Round().Y)).Push(gtx.Ops)
+	canvasOff := op.Offset(image.Pt(gtx.Dp(unit.Dp(c.offset.Round().X)), gtx.Dp(unit.Dp(c.offset.Round().Y)))).Push(gtx.Ops)
 	for _, m := range c.matrices {
 		m.Layout(gtx, th, c.debug)
 		m.Update(gtx.Context, c.debug)
