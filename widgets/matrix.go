@@ -42,6 +42,8 @@ type Matrix[T any] struct {
 	SelectedCells          []image.Point
 	pendingSelectionBounds f32x.Rectangle
 	wasMovingMinLast       bool
+	cachedOps              *op.Ops
+	call                   op.CallOp
 }
 
 func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, debug bool) layout.Dimensions {
@@ -62,30 +64,38 @@ func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, debug bool)
 	bgnd := clip.Rect{Min: image.Pt(0, 0), Max: image.Pt(m.Size.Round().X, m.Size.Round().Y)}.Push(gtx.Ops)
 	paint.ColorOp{Color: m.Color}.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
-
-	cells := clip.Path{}
-	cells.Begin(gtx.Ops)
-
-	cellwidth := gtx.Dp(unit.Dp(m.cellSize.X))
-	cellheight := gtx.Dp(unit.Dp(m.cellSize.Y))
-
-	for x := 0; x < cols; x++ {
-		for y := 0; y < rows; y++ {
-			cells.MoveTo(f32.Pt(float32(cellwidth*x), float32(cellheight*y)))
-			cells.LineTo(f32.Pt(float32((cellwidth*x)+cellwidth), float32(cellheight*y)))
-			cells.LineTo(f32.Pt(float32((cellwidth*x)+cellwidth), float32(cellheight*y+cellheight)))
-			cells.LineTo(f32.Pt(float32(cellwidth*x), float32(cellheight*y+cellheight)))
-		}
-	}
-	cells.Close()
-
-	borderWidth := float32(.35) / float32(gtx.Dp(1))
-	borderColor := color.NRGBA{R: 55, G: 55, B: 55, A: 255}
-	cStroke := clip.Stroke{Path: cells.End(), Width: borderWidth}.Op().Push(gtx.Ops)
-	paint.ColorOp{Color: borderColor}.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	cStroke.Pop()
 	bgnd.Pop()
+
+	if m.cachedOps == nil {
+		m.cachedOps = &op.Ops{}
+		macro := op.Record(m.cachedOps)
+		cells := clip.Path{}
+		cells.Begin(m.cachedOps)
+
+		cellwidth := gtx.Dp(unit.Dp(m.cellSize.X))
+		cellheight := gtx.Dp(unit.Dp(m.cellSize.Y))
+
+		for x := 0; x < cols; x++ {
+			for y := 0; y < rows; y++ {
+				cells.MoveTo(f32.Pt(float32(cellwidth*x), float32(cellheight*y)))
+				cells.LineTo(f32.Pt(float32((cellwidth*x)+cellwidth), float32(cellheight*y)))
+				cells.LineTo(f32.Pt(float32((cellwidth*x)+cellwidth), float32(cellheight*y+cellheight)))
+				cells.LineTo(f32.Pt(float32(cellwidth*x), float32(cellheight*y+cellheight)))
+			}
+		}
+		cells.Close()
+
+		borderWidth := float32(.35) / float32(gtx.Dp(1))
+		borderColor := color.NRGBA{R: 55, G: 55, B: 55, A: 255}
+		cStroke := clip.Stroke{Path: cells.End(), Width: borderWidth}.Op().Push(m.cachedOps)
+		paint.ColorOp{Color: borderColor}.Add(m.cachedOps)
+		paint.PaintOp{}.Add(m.cachedOps)
+		cStroke.Pop()
+
+		m.call = macro.Stop()
+	}
+
+	m.call.Add(gtx.Ops)
 
 	/*
 		for x := 0; x < cols; x++ {
