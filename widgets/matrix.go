@@ -49,11 +49,7 @@ func (m *Matrix[T]) Layout(gtx *context.Context, th *material.Theme, debug bool)
 	m.cellSize.X = float32(cellWidth)
 	m.cellSize.Y = float32(cellHeight)
 
-	pos := m.Pos
-	posX := gtx.Dp(unit.Dp(pos.X))
-	posY := gtx.Dp(unit.Dp(pos.Y))
-
-	off := op.Offset(image.Pt(posX, posY)).Push(gtx.Ops)
+	off := op.Offset(image.Pt(gtx.Dp(unit.Dp(m.Pos.X)), gtx.Dp(unit.Dp(m.Pos.Y)))).Push(gtx.Ops)
 
 	cellSize := f32.Point{X: float32(gtx.Dp(cellWidth)), Y: float32(gtx.Dp(cellHeight))}
 
