@@ -122,8 +122,11 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	for _, e := range gtx.Events() {
 		switch evt := e.(type) {
 		case context.CreateMatrix:
+			if evt.Rows == 0 || evt.Cols == 0 {
+				continue
+			}
 			c.matrices = append(c.matrices, &Matrix[float64]{
-				Pos:   evt.Pos.Div(float32(zoomLevelPx)),
+				Pos:   evt.Pos.Div(float32(zoomLevelPx)).Sub(c.offset),
 				Color: color.NRGBA{R: 245, G: 245, B: 245, A: 255},
 				Data:  mat.NewDense(evt.Rows, evt.Cols, make([]float64, evt.Rows*evt.Cols)),
 			})
