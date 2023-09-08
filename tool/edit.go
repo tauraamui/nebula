@@ -17,8 +17,6 @@ import (
 const (
 	cellWidth  unit.Dp = 80
 	cellHeight unit.Dp = 25
-	cols       int     = 15
-	rows       int     = 10
 )
 
 var cellSize f32.Point = f32.Pt(float32(cellWidth), float32(cellHeight))
@@ -62,10 +60,11 @@ func (e *Edit) releaseEvents(dp func(v unit.Dp) int, pushEvent func(e any)) func
 		if buttons == pointer.ButtonPrimary {
 			selectionArea := e.pendingCreationBounds.SwappedBounds()
 			if !selectionArea.Empty() {
+				rows, cols := calcRowsAndColsFromSpan(dp, selectionArea)
 				pushEvent(context.CreateMatrix{
 					Pos:  selectionArea.Min,
-					Rows: 5,
-					Cols: 5,
+					Rows: rows,
+					Cols: cols,
 				})
 				e.pendingCreationBounds = f32x.Rectangle{}
 				return
@@ -89,6 +88,7 @@ func renderPendingCreationSpan(gtx *context.Context, span f32x.Rectangle, bgcolo
 	paint.PaintOp{}.Add(gtx.Ops)
 
 	// render pending matrix cells
+	rows, cols := calcRowsAndColsFromSpan(gtx.Dp, span)
 
 	for x := 0; x < cols; x++ {
 		for y := 0; y < rows; y++ {
@@ -116,6 +116,8 @@ func renderCell(gtx *context.Context, x, y int, posx, posy, cellwidth, cellheigh
 	cl3.Pop()
 }
 
-func calcRowsAndColsFromSpan(span f32x.Rectangle) (int, int) {
-	return 0, 0
+func calcRowsAndColsFromSpan(dp func(v unit.Dp) int, span f32x.Rectangle) (int, int) {
+	rows := (span.Max.Round().Y - span.Min.Round().Y) / int(cellHeight)
+	cols := (span.Max.Round().X - span.Min.Round().X) / int(cellWidth)
+	return rows, cols
 }
