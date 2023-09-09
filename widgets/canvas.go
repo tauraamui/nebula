@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"gioui.org/font/gofont"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/io/profile"
 	"gioui.org/io/system"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -64,10 +66,16 @@ func NewCanvas() *Canvas {
 func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 	gtx := context.NewContext(ops, e)
 
+	prof := profile.Op{Tag: "root"}
+	prof.Add(gtx.Ops)
+
 	key.InputOp{
 		Tag: "root",
 	}.Add(gtx.Ops)
 	for _, e := range gtx.Queue.Events("root") {
+		if pe, ok := e.(profile.Event); ok {
+			fmt.Printf("%v\n", pe)
+		}
 		if ke, ok := e.(key.Event); ok {
 			if ke.State == key.Press {
 				if strings.EqualFold(ke.Name, "x") {
@@ -90,8 +98,7 @@ func (c *Canvas) Update(ops *op.Ops, e system.FrameEvent) {
 		}
 	}
 
-	ma := image.Rect(0, 0, e.Size.X, e.Size.Y)
-	stack := clip.Rect(ma).Push(gtx.Ops)
+	stack := clip.Rect(image.Rect(0, 0, e.Size.X, e.Size.Y)).Push(gtx.Ops)
 	c.input.Add(gtx.Ops)
 	c.input.Events(gtx.Metric, gtx.Ops, gtx.Queue, nil, nil, nil, c.secondaryButtonDragEvents(gtx.Dp))
 	activeTool := c.toolbar.GetActiveTool()
